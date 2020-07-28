@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ControlMobile", "ControlMobile\ControlMobile.vcxproj", "{276AE920-7FD9-4517-BE21-788E30737C45}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{276AE920-7FD9-4517-BE21-788E30737C45}.Debug|Win32.ActiveCfg = Debug|Win32
+		{276AE920-7FD9-4517-BE21-788E30737C45}.Debug|Win32.Build.0 = Debug|Win32
+		{276AE920-7FD9-4517-BE21-788E30737C45}.Release|Win32.ActiveCfg = Release|Win32
+		{276AE920-7FD9-4517-BE21-788E30737C45}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
