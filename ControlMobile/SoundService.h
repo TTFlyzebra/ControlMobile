@@ -19,15 +19,22 @@ private:
 private:
 	static const int PCM_RATE = 8000;  //刺激率 
 	static const int PCM_SAMPLE_RATE = 44100;  //采样率 	
-	static const int RECV_BUF_MAX = 4;
-	static const int RECV_BUF_SIZE = 4096;
-	static const int SEND_BUF_SIZE = 1024;
-	char *recvBuf[RECV_BUF_SIZE];
+	static const int OUT_BUF_MAX = 4;
+	static const int OUT_BUF_SIZE = 4096;
+	static const int IN_BUF_MAX = 4;
+	static const int IN_BUF_SIZE = 320;
+	static const int SEND_BUF_SIZE = 320;
+	char *recvBuf[OUT_BUF_SIZE];
+	char *sendBuf[IN_BUF_SIZE];
 
     SOCKET slisten;
 	SOCKET sock_cli;
-	WAVEFORMATEX pFormat; 
-	WAVEHDR WaveOutHdr[RECV_BUF_MAX]; 
+	WAVEFORMATEX pOutFormat; 
+	WAVEHDR WaveOutHdr[OUT_BUF_MAX]; 
+
+	WAVEFORMATEX pInFormat; 
+	WAVEHDR WaveIntHdr[OUT_BUF_MAX]; 
+
 	int is_stop;
 public:
 	HANDLE m_socketThread;  

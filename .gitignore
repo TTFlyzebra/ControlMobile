@@ -1,2 +1,7 @@
 ipch/
 *.sdf
+ControlMobile.opensdf
+ControlMobile.v11.suo
+ControlMobile/Debug/
+Debug/
+

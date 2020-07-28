@@ -4,8 +4,10 @@
 
 SoundService::SoundService(void)
 {
-	for(int i=0;i<RECV_BUF_MAX;i++){
-		recvBuf[i] = new char[RECV_BUF_SIZE];
+	is_stop = 1;
+
+	for(int i=0;i<OUT_BUF_MAX;i++){
+		recvBuf[i] = new char[OUT_BUF_SIZE];
 	}
 
 	//初始化WSA
@@ -16,15 +18,21 @@ SoundService::SoundService(void)
 		TRACE("WSAStartup error !");
 	}
 
-	pFormat.wFormatTag=WAVE_FORMAT_PCM;	//simple,uncompressed format 
-	pFormat.nChannels=2;//1=mono, 2=stereo 
-	pFormat.nSamplesPerSec=PCM_SAMPLE_RATE; // 44100 
-	pFormat.nAvgBytesPerSec=PCM_SAMPLE_RATE * 2; 	// = nSamplesPerSec * n.Channels * wBitsPerSample/8 
-	pFormat.wBitsPerSample=16;	//16 for high quality, 8 for telephone-grade 
-	pFormat.nBlockAlign=4; // = n.Channels * wBitsPerSample/8 
-	pFormat.cbSize=0; 
-
-	is_stop = 1;
+	pOutFormat.wFormatTag=WAVE_FORMAT_PCM;	//simple,uncompressed format 
+	pOutFormat.nChannels=2;//1=mono, 2=stereo 
+	pOutFormat.nSamplesPerSec=PCM_SAMPLE_RATE; // 44100 
+	pOutFormat.nAvgBytesPerSec=PCM_SAMPLE_RATE * 2; 	// = nSamplesPerSec * n.Channels * wBitsPerSample/8 
+	pOutFormat.wBitsPerSample=16;	//16 for high quality, 8 for telephone-grade 
+	pOutFormat.nBlockAlign=4; // = n.Channels * wBitsPerSample/8 
+	pOutFormat.cbSize=0; 
+	
+	pOutFormat.wFormatTag=WAVE_FORMAT_PCM;	//simple,uncompressed format 
+	pOutFormat.nChannels=2;//1=mono, 2=stereo 
+	pOutFormat.nSamplesPerSec=PCM_SAMPLE_RATE; // 44100 
+	pOutFormat.nAvgBytesPerSec=PCM_SAMPLE_RATE * 2; 	// = nSamplesPerSec * n.Channels * wBitsPerSample/8 
+	pOutFormat.wBitsPerSample=16;	//16 for high quality, 8 for telephone-grade 
+	pOutFormat.nBlockAlign=4; // = n.Channels * wBitsPerSample/8 
+	pOutFormat.cbSize=0; 
 
 	////内容 
 	//for (int i=0;i<NUMPTS;i++) 
@@ -36,8 +44,8 @@ SoundService::SoundService(void)
 
 SoundService::~SoundService(void)
 {
-	for(int i=0;i<RECV_BUF_MAX;i++){
-		delete [] recvBuf[RECV_BUF_SIZE];
+	for(int i=0;i<OUT_BUF_MAX;i++){
+		delete [] recvBuf[OUT_BUF_SIZE];
 	}	
 
 	WSACleanup();//释放资源的操作
@@ -120,7 +128,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp){
 	MMRESULT     result; 
 	SoundService *mPtr=(SoundService *)lp;
 	//PlaySound(_T("D:\\res\\music\\HHG.wav"), NULL, SND_FILENAME | SND_ASYNC);	
-	result = waveOutOpen(&hWaveOut, WAVE_MAPPER,&mPtr->pFormat,0L, 0L, WAVE_FORMAT_DIRECT); 
+	result = waveOutOpen(&hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT); 
 	if (result) 
 	{ 
 	    TRACE(_T("Failed to open waveform output device.")); 
@@ -128,12 +136,12 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp){
 	}
 	while (mPtr->is_stop == 0)
 	{
-		//memset(recvBuf[i],0,RECV_BUF_SIZE);
-		recvLen = recv(mPtr->sock_cli,mPtr->recvBuf[i],RECV_BUF_SIZE,0);
+		//memset(recvBuf[i],0,OUT_BUF_SIZE);
+		recvLen = recv(mPtr->sock_cli,mPtr->recvBuf[i],OUT_BUF_SIZE,0);
 		//TRACE(_T("play read len=%d, number=%d. \n"),recvLen, j); 
 		if(recvLen>0){
 			mPtr->WaveOutHdr[i].lpData = mPtr->recvBuf[i];
-			mPtr->WaveOutHdr[i].dwBufferLength = RECV_BUF_SIZE;
+			mPtr->WaveOutHdr[i].dwBufferLength = OUT_BUF_SIZE;
 			mPtr->WaveOutHdr[i].dwUser = 0L;
 			mPtr->WaveOutHdr[i].dwFlags = 0L;
 			mPtr->WaveOutHdr[i].dwLoops = 0L;
@@ -143,9 +151,9 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp){
 			i++;
 		}
 		j++;
-		if(i>=RECV_BUF_MAX) i = 0;
+		if(i>=OUT_BUF_MAX) i = 0;
 	}
-	for(int n = 0;i<RECV_BUF_MAX;i++){
+	for(int n = 0;i<OUT_BUF_MAX;i++){
 		while(waveOutUnprepareHeader(hWaveOut,&mPtr->WaveOutHdr[i],sizeof(WAVEHDR)) == WAVERR_STILLPLAYING){
 			TRACE(_T("waveOutUnprepareHeader WAVERR_STILLPLAYING. \n")); 
 			Sleep(500);
