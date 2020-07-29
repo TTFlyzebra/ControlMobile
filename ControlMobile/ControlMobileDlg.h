@@ -38,4 +38,7 @@ private:
 	SoundService *mSoundService;
 public:
 	afx_msg void OnBnClickedCloseSound();
+	afx_msg void OnBnClickedCheck1();
+	afx_msg void OnBnClickedPlayfile();
+	afx_msg void OnBnClickedStopfile();
 };

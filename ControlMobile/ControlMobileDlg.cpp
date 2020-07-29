@@ -65,6 +65,9 @@ BEGIN_MESSAGE_MAP(CControlMobileDlg, CDialogEx)
 	ON_BN_CLICKED(IDOK, &CControlMobileDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, &CControlMobileDlg::OnBnClickedCancel)
 	ON_BN_CLICKED(IDC_CLOSE_SOUND, &CControlMobileDlg::OnBnClickedCloseSound)
+	ON_BN_CLICKED(IDC_CHECK1, &CControlMobileDlg::OnBnClickedCheck1)
+	ON_BN_CLICKED(IDC_PLAYFILE, &CControlMobileDlg::OnBnClickedPlayfile)
+	ON_BN_CLICKED(IDC_STOPFILE, &CControlMobileDlg::OnBnClickedStopfile)
 END_MESSAGE_MAP()
 
 
@@ -161,7 +164,7 @@ void CControlMobileDlg::OnBnClickedOk()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	//CDialogEx::OnOK();
-	mSoundService->start();	
+	mSoundService->startPlay();	
 }
 
 
@@ -175,5 +178,25 @@ void CControlMobileDlg::OnBnClickedCancel()
 void CControlMobileDlg::OnBnClickedCloseSound()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	mSoundService->stop();
+	mSoundService->stopPlay();
+}
+
+
+void CControlMobileDlg::OnBnClickedCheck1()
+{
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+
+void CControlMobileDlg::OnBnClickedPlayfile()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	mSoundService->startSpeak();
+}
+
+
+void CControlMobileDlg::OnBnClickedStopfile()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	mSoundService->stopSpeak();
 }

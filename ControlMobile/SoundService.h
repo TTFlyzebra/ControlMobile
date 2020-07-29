@@ -10,8 +10,10 @@ class SoundService
 public:
 	SoundService(HWND hwnd);
 	~SoundService(void);
-	void start();
-	void stop();
+	void startPlay();
+	void stopPlay();
+	void startSpeak();
+	void stopSpeak();
 private:
 	static DWORD CALLBACK socketThread(LPVOID); 
 	static DWORD CALLBACK playerThread(LPVOID);
@@ -22,7 +24,7 @@ private:
 	static const int PCM_OUT_RATE = 44100;  //²ÉÑùÂÊ 	
 	static const int OUT_BUF_MAX = 4;
 	static const int OUT_BUF_SIZE = 4096;
-	static const int IN_BUF_MAX = 4;
+	static const int IN_BUF_MAX = 2;
 	static const int IN_BUF_SIZE = 320;	
 	char *outBuf[OUT_BUF_SIZE];
 	char *inBuf[IN_BUF_SIZE];
@@ -39,7 +41,10 @@ private:
 
 	int send_count;
 	int is_stop;
+	int is_speak;
 	HWND mHwnd;
+	FILE *inFile;
+
 public:
 	HANDLE m_socketThread;  
 	HANDLE m_playerThread;  

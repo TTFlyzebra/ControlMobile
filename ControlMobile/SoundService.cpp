@@ -7,6 +7,7 @@ SoundService::SoundService(HWND hwnd)
 {
 	mHwnd = hwnd;
 	is_stop = 1;
+	is_speak = 0;
 
 	for(int i=0;i<OUT_BUF_MAX;i++){
 		outBuf[i] = new char[OUT_BUF_SIZE];
@@ -55,7 +56,7 @@ SoundService::~SoundService(void)
 }
 
 
-void SoundService::start(void)
+void SoundService::startPlay(void)
 {	
 	if(is_stop != 0){
 		is_stop = 0;
@@ -67,7 +68,7 @@ void SoundService::start(void)
 	}
 }
 
-void SoundService::stop(void)
+void SoundService::stopPlay(void)
 {	
 	is_stop = 1;	
 	//hWaveIn = NULL;
@@ -76,6 +77,47 @@ void SoundService::stop(void)
 	waveInClose(hWaveIn);
 	closesocket(sock_cli);
 	closesocket(slisten);	
+}
+
+void SoundService::startSpeak(void)
+{	
+	//inFile = fopen("D:\\res\\music\\temp.pcm","wb+");
+	is_speak = 1;
+	TRACE("recordThread start. \n"); 
+	MMRESULT     result; 
+	
+	int n=waveInGetNumDevs();
+	TRACE("waveInGetNumDevs %d. \n",n); 
+	
+	result = waveInOpen(&hWaveIn, WAVE_MAPPER, &pInFormat,(DWORD)MicCallBack, (DWORD)this, CALLBACK_FUNCTION);
+	if (result!= MMSYSERR_NOERROR) { 
+	    TRACE("Failed to open waveform input device."); 
+	}else{
+		for(int i=0;i<IN_BUF_MAX;i++){
+			WaveInHdr[i].lpData = inBuf[i];
+			WaveInHdr[i].dwBufferLength = IN_BUF_SIZE;
+			WaveInHdr[i].dwBytesRecorded = 0;
+			WaveInHdr[i].dwUser = 0L;
+			WaveInHdr[i].dwFlags = 0L;
+			WaveInHdr[i].dwLoops = 1L;
+			WaveInHdr[i].lpNext = NULL;
+			WaveInHdr[i].reserved = 0;
+			waveInPrepareHeader(hWaveIn, &WaveInHdr[i], sizeof(WAVEHDR));		
+			waveInAddBuffer(hWaveIn, &WaveInHdr[i], sizeof(WAVEHDR) );		
+		}
+		waveInStart(hWaveIn);
+	}
+}
+
+void SoundService::stopSpeak(void)
+{	
+	//fclose(inFile);
+	if(is_speak == 1){
+		is_speak = 0;
+		waveInStop(hWaveIn);
+		waveInReset(hWaveIn);
+		waveInClose(hWaveIn);
+	}
 }
 
 
@@ -105,8 +147,8 @@ DWORD CALLBACK SoundService::socketThread(LPVOID lp){
 		return -1;
 	}	
 	int nAddrlen = sizeof(remoteAddr);
-	//while (mPtr->is_stop == 0)
-	//{
+	while (mPtr->is_stop == 0)
+	{
 		TRACE("accept client connect, socke_cli=%d.\n",mPtr->sock_cli);
 		mPtr->sock_cli = accept(mPtr->slisten, (SOCKADDR *)&remoteAddr, &nAddrlen);
 		TRACE("accept socke_cli=%d.\n",mPtr->sock_cli);
@@ -117,14 +159,14 @@ DWORD CALLBACK SoundService::socketThread(LPVOID lp){
 				     ResumeThread(mPtr->m_playerThread);  
 				}			
 			}
-			if(mPtr->m_recordThread!=NULL){
-				mPtr->m_recordThread = CreateThread(NULL, 0, &SoundService::recordThread, lp, CREATE_SUSPENDED, NULL);  
-				if (NULL!= mPtr->m_recordThread) {  
-				     ResumeThread(mPtr->m_recordThread);  
-				}
-			}
+			//if(mPtr->m_recordThread!=NULL){
+			//	mPtr->m_recordThread = CreateThread(NULL, 0, &SoundService::recordThread, lp, CREATE_SUSPENDED, NULL);  
+			//	if (NULL!= mPtr->m_recordThread) {  
+			//	     ResumeThread(mPtr->m_recordThread);  
+			//	}
+			//}
 		}
-	//}	
+	}	
 	TRACE("socketThread exit. \n"); 
 	return 0;
 }
@@ -177,7 +219,28 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp){
 }
 
 DWORD CALLBACK SoundService::recordThread(LPVOID lp){
-    TRACE("recordThread start. \n"); 
+	//TRACE("recordThread start. \n"); 		
+	//FILE *file;		
+	//char readBuf[IN_BUF_SIZE];		
+	//SoundService *mPtr=(SoundService *)lp;		
+	//file = fopen("D:\\res\\music\\HHG8k.pcm","rb");		   
+	//int i = 0;	  
+	//while (mPtr->is_stop == 0){		
+	//	int readLen = fread(readBuf,1,IN_BUF_SIZE,file);	
+	//	if(readLen>0){	
+	//		int sendLen=send(mPtr->sock_cli, readBuf, readLen, 0);	
+ 	//		TRACE("send readLen=%d, number=%d \n",readLen,i);	
+	//	}else{	    TRACE("recordThread start. \n"); 
+	//		fseek(file,0,0);	
+	//		TRACE("fseek 0. \n");		
+	//	}	
+ 	//	i++;		
+	//}		
+	//fclose(file);	
+ 	//TRACE("recordThread exit. \n"); 		
+	//return 0;
+
+	TRACE("recordThread start. \n"); 
 	SoundService *mPtr=(SoundService *)lp;	
 	MMRESULT     result; 
 	
@@ -204,7 +267,7 @@ DWORD CALLBACK SoundService::recordThread(LPVOID lp){
 	}
 	waveInStart(mPtr->hWaveIn);
 	TRACE("recordThread exit. \n"); 
-	return 0;
+    return 0;
 }
 
 DWORD SoundService::MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD lp,DWORD dw1,DWORD dw2)
@@ -219,11 +282,11 @@ DWORD SoundService::MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD lp,DWORD dw1,DWO
 		break;
 	case MM_WIM_DATA:
 		//TRACE("MM_WIM_DATA.\n"); 
-		if(mPtr->is_stop==0) {
+		if(mPtr->is_stop==0 && mPtr->is_speak == 1) {
 			int sendLen=send(mPtr->sock_cli, pWaveInHdr->lpData, IN_BUF_SIZE, 0);
+			//fwrite(pWaveInHdr->lpData,1,IN_BUF_SIZE,mPtr->inFile);
 			TRACE("send sendLen=%d, number=%d, sokcet=%d.\n",sendLen,mPtr->send_count,mPtr->sock_cli);
 			mPtr->send_count++;
-			memset(pWaveInHdr->lpData,0,IN_BUF_SIZE);
 			waveInAddBuffer(hWaveIn, pWaveInHdr, sizeof(WAVEHDR) );
 		}
 		break;
