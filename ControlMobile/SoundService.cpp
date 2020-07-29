@@ -38,12 +38,6 @@ SoundService::SoundService(HWND hwnd)
 	pInFormat.wBitsPerSample = 16;	//16 for high quality, 8 for telephone-grade 
 	pInFormat.nBlockAlign = 1 * 16 / 8; // = n.Channels * wBitsPerSample/8 
 	pInFormat.cbSize = 0; 
-
-	////ÄÚÈÝ 
-	//for (int i=0;i<NUMPTS;i++) 
-	//{ 
-	//    waveOut[i] = (short int)ceil(sin(2*3.1415926*rate*i/NUMPTS)*20000); 
-	//} 
 }
 
 
@@ -62,9 +56,10 @@ SoundService::~SoundService(void)
 
 
 void SoundService::start(void)
-{
-	if(is_stop!=0){
+{	
+	if(is_stop != 0){
 		is_stop = 0;
+		send_count = 0;
 		m_playerThread = CreateThread(NULL, 0, &SoundService::socketThread, this, CREATE_SUSPENDED, NULL);  
 		if (NULL!= m_playerThread) {  
 		     ResumeThread(m_playerThread);  
@@ -110,24 +105,26 @@ DWORD CALLBACK SoundService::socketThread(LPVOID lp){
 		return -1;
 	}	
 	int nAddrlen = sizeof(remoteAddr);
-	while (mPtr->is_stop == 0)
-	{
+	//while (mPtr->is_stop == 0)
+	//{
 		TRACE("accept client connect, socke_cli=%d.\n",mPtr->sock_cli);
 		mPtr->sock_cli = accept(mPtr->slisten, (SOCKADDR *)&remoteAddr, &nAddrlen);
 		TRACE("accept socke_cli=%d.\n",mPtr->sock_cli);
-		if(mPtr->m_playerThread != NULL){
-			mPtr->m_playerThread = CreateThread(NULL, 0, &SoundService::playerThread, lp, CREATE_SUSPENDED, NULL);  
-			if (NULL!= mPtr->m_playerThread) {  
-			     ResumeThread(mPtr->m_playerThread);  
-			}			
-		}
-		if(mPtr->m_recordThread!=NULL){
-			mPtr->m_recordThread = CreateThread(NULL, 0, &SoundService::recordThread, lp, CREATE_SUSPENDED, NULL);  
-			if (NULL!= mPtr->m_recordThread) {  
-			     ResumeThread(mPtr->m_recordThread);  
+		if(mPtr->sock_cli != INVALID_SOCKET){
+			if(mPtr->m_playerThread != NULL){
+				mPtr->m_playerThread = CreateThread(NULL, 0, &SoundService::playerThread, lp, CREATE_SUSPENDED, NULL);  
+				if (NULL!= mPtr->m_playerThread) {  
+				     ResumeThread(mPtr->m_playerThread);  
+				}			
+			}
+			if(mPtr->m_recordThread!=NULL){
+				mPtr->m_recordThread = CreateThread(NULL, 0, &SoundService::recordThread, lp, CREATE_SUSPENDED, NULL);  
+				if (NULL!= mPtr->m_recordThread) {  
+				     ResumeThread(mPtr->m_recordThread);  
+				}
 			}
 		}
-	}	
+	//}	
 	TRACE("socketThread exit. \n"); 
 	return 0;
 }
@@ -138,18 +135,19 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp){
 	int recvLen = 0;
 	int i = 0;
 	MMRESULT     result; 
-	//PlaySound(_T("D:\\res\\music\\HHG.wav"), NULL, SND_FILENAME | SND_ASYNC);	
+	//PlaySound("D:\\res\\music\\HHG.wav"), NULL, SND_FILENAME | SND_ASYNC);	
 	result = waveOutOpen(&mPtr->hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT); 
 	if (result) 
 	{ 
-	    TRACE(_T("Failed to open waveform output device.")); 
+	    TRACE("Failed to open waveform output device."); 
 		return -1;
 	}
+	int j = 0;
 	while (mPtr->is_stop == 0)
 	{
 		//memset(recvBuf[i],0,OUT_BUF_SIZE);
 		recvLen = recv(mPtr->sock_cli,mPtr->outBuf[i],OUT_BUF_SIZE,0);
-		//TRACE(_T("play read len=%d, number=%d. \n"),recvLen, j); 
+		TRACE("read recvLen=%d, number=%d. sokcet=%d.\n",recvLen,j,mPtr->sock_cli);
 		if(recvLen>0){
 			mPtr->WaveOutHdr[i].lpData = mPtr->outBuf[i];
 			mPtr->WaveOutHdr[i].dwBufferLength = OUT_BUF_SIZE;
@@ -160,12 +158,13 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp){
 			waveOutWrite(mPtr->hWaveOut, &mPtr->WaveOutHdr[i], sizeof(WAVEHDR));
 			//WaitForSingleObject(hWaveOut, INFINITE);
 			i++;
+			j++;
 		}
 		if(i>=OUT_BUF_MAX) i = 0;
 	}
 	for(int n = 0;i<OUT_BUF_MAX;i++){
 		while(waveOutUnprepareHeader(mPtr->hWaveOut,&mPtr->WaveOutHdr[i],sizeof(WAVEHDR)) == WAVERR_STILLPLAYING){
-			TRACE(_T("waveOutUnprepareHeader WAVERR_STILLPLAYING. \n")); 
+			TRACE("waveOutUnprepareHeader WAVERR_STILLPLAYING. \n"); 
 			Sleep(500);
 		}
 	}
@@ -181,30 +180,28 @@ DWORD CALLBACK SoundService::recordThread(LPVOID lp){
     TRACE("recordThread start. \n"); 
 	SoundService *mPtr=(SoundService *)lp;	
 	MMRESULT     result; 
-
+	
 	int n=waveInGetNumDevs();
 	TRACE("waveInGetNumDevs %d. \n",n); 
-
-	mPtr->i_in_count = 0;
+	
 	result = waveInOpen(&mPtr->hWaveIn, WAVE_MAPPER, &mPtr->pInFormat,(DWORD)MicCallBack, (DWORD)lp, CALLBACK_FUNCTION);
 	if (result!= MMSYSERR_NOERROR) 
 	{ 
-	    TRACE(_T("Failed to open waveform input device.")); 
+	    TRACE("Failed to open waveform input device."); 
 		return -1;
 	}
-	mPtr->WaveInHdr[mPtr->i_in_count].lpData = mPtr->inBuf[mPtr->i_in_count];
-	mPtr->WaveInHdr[mPtr->i_in_count].dwBufferLength = IN_BUF_SIZE;
-	mPtr->WaveInHdr[mPtr->i_in_count].dwBytesRecorded = 0;
-	mPtr->WaveInHdr[mPtr->i_in_count].dwUser = 0L;
-	mPtr->WaveInHdr[mPtr->i_in_count].dwFlags = 0L;
-	mPtr->WaveInHdr[mPtr->i_in_count].dwLoops = 0L;
-	mPtr->WaveInHdr[mPtr->i_in_count].lpNext = NULL;
-	mPtr->WaveInHdr[mPtr->i_in_count].reserved = 0;
-	waveInPrepareHeader(mPtr->hWaveIn, &mPtr->WaveInHdr[mPtr->i_in_count], sizeof(WAVEHDR));		
-	waveInAddBuffer(mPtr->hWaveIn, &mPtr->WaveInHdr[mPtr->i_in_count], sizeof(WAVEHDR) );
-	waveInStart(mPtr->hWaveIn);
-	mPtr->i_in_count++;
-	if(mPtr->i_in_count>=IN_BUF_MAX) mPtr->i_in_count = 0;
+	for(int i=0;i<IN_BUF_MAX;i++){
+		mPtr->WaveInHdr[i].lpData = mPtr->inBuf[i];
+		mPtr->WaveInHdr[i].dwBufferLength = IN_BUF_SIZE;
+		mPtr->WaveInHdr[i].dwBytesRecorded = 0;
+		mPtr->WaveInHdr[i].dwUser = 0L;
+		mPtr->WaveInHdr[i].dwFlags = 0L;
+		mPtr->WaveInHdr[i].dwLoops = 0L;
+		mPtr->WaveInHdr[i].lpNext = NULL;
+		mPtr->WaveInHdr[i].reserved = 0;
+		waveInPrepareHeader(mPtr->hWaveIn, &mPtr->WaveInHdr[i], sizeof(WAVEHDR));		
+		waveInAddBuffer(mPtr->hWaveIn, &mPtr->WaveInHdr[i], sizeof(WAVEHDR) );		
+	}
 	waveInStart(mPtr->hWaveIn);
 	TRACE("recordThread exit. \n"); 
 	return 0;
@@ -212,41 +209,32 @@ DWORD CALLBACK SoundService::recordThread(LPVOID lp){
 
 DWORD SoundService::MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD lp,DWORD dw1,DWORD dw2)
 {
-	TRACE(_T("MicCallBack start.\n")); 
+	//TRACE("MicCallBack start.%d, %d\n"),dw1,dw2); 
 	SoundService *mPtr=(SoundService *)lp;
+	PWAVEHDR pWaveInHdr =(PWAVEHDR)dw1;
 	switch(uMsg)
 	{
 	case MM_WIM_OPEN:
-		TRACE(_T("MM_WIM_OPEN.\n")); 
+		TRACE("MM_WIM_OPEN.\n"); 
 		break;
 	case MM_WIM_DATA:
-		TRACE(_T("MM_WIM_DATA.\n")); 
+		//TRACE("MM_WIM_DATA.\n"); 
 		if(mPtr->is_stop==0) {
-			int num = (mPtr->i_in_count-1+IN_BUF_MAX)%IN_BUF_MAX;
-			int sendLen=send(mPtr->sock_cli, mPtr->inBuf[num], IN_BUF_SIZE, 5000);
-			TRACE("send sendLen=%d, number=%d \n",sendLen,mPtr->i_in_count);
-			mPtr->WaveInHdr[mPtr->i_in_count].lpData = mPtr->inBuf[mPtr->i_in_count];
-			mPtr->WaveInHdr[mPtr->i_in_count].dwBufferLength = IN_BUF_SIZE;
-			mPtr->WaveInHdr[mPtr->i_in_count].dwBytesRecorded = 0;
-			mPtr->WaveInHdr[mPtr->i_in_count].dwUser = 0L;
-			mPtr->WaveInHdr[mPtr->i_in_count].dwFlags = 0L;
-			mPtr->WaveInHdr[mPtr->i_in_count].dwLoops = 0L;
-			mPtr->WaveInHdr[mPtr->i_in_count].lpNext = NULL;
-			mPtr->WaveInHdr[mPtr->i_in_count].reserved = 0;
-			waveInPrepareHeader(mPtr->hWaveIn, &mPtr->WaveInHdr[mPtr->i_in_count], sizeof(WAVEHDR));		
-			waveInAddBuffer(mPtr->hWaveIn, &mPtr->WaveInHdr[mPtr->i_in_count], sizeof(WAVEHDR) );
-			mPtr->i_in_count++;
-			if(mPtr->i_in_count>=IN_BUF_MAX) mPtr->i_in_count = 0;
+			int sendLen=send(mPtr->sock_cli, pWaveInHdr->lpData, IN_BUF_SIZE, 0);
+			TRACE("send sendLen=%d, number=%d, sokcet=%d.\n",sendLen,mPtr->send_count,mPtr->sock_cli);
+			mPtr->send_count++;
+			memset(pWaveInHdr->lpData,0,IN_BUF_SIZE);
+			waveInAddBuffer(hWaveIn, pWaveInHdr, sizeof(WAVEHDR) );
 		}
 		break;
 	case MM_WIM_CLOSE:
-		TRACE(_T("MM_WIM_CLOSE.\n")); 
+		TRACE("MM_WIM_CLOSE.\n"); 
 		waveInReset(hWaveIn);
 	    waveInClose(hWaveIn);
 		break;
 	default:
 		break;
 	}
-	TRACE(_T("MicCallBack exit.\n")); 
+	//TRACE("MicCallBack exit.\n"); 
 	return 0;
 }

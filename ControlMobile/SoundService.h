@@ -23,7 +23,7 @@ private:
 	static const int OUT_BUF_MAX = 4;
 	static const int OUT_BUF_SIZE = 4096;
 	static const int IN_BUF_MAX = 4;
-	static const int IN_BUF_SIZE = 320;
+	static const int IN_BUF_SIZE = 320;	
 	char *outBuf[OUT_BUF_SIZE];
 	char *inBuf[IN_BUF_SIZE];
 
@@ -33,12 +33,11 @@ private:
 	WAVEFORMATEX pOutFormat; 
 	WAVEHDR      WaveOutHdr[OUT_BUF_MAX]; 
 	HWAVEOUT     hWaveOut;
-
 	WAVEFORMATEX pInFormat; 
 	WAVEHDR      WaveInHdr[IN_BUF_SIZE]; 	 
 	HWAVEIN      hWaveIn; 
-	int i_in_count;
 
+	int send_count;
 	int is_stop;
 	HWND mHwnd;
 public:
