@@ -1,6 +1,7 @@
 
 // ControlMobileDlg.h : м╥нд╪Ч
 //
+#include "resource.h"
 #include "SoundService.h"
 
 #pragma once

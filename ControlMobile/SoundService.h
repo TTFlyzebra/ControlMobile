@@ -8,7 +8,7 @@
 class SoundService
 {
 public:
-	SoundService(void);
+	SoundService(HWND hwnd);
 	~SoundService(void);
 	void start();
 	void stop();
@@ -16,26 +16,31 @@ private:
 	static DWORD CALLBACK socketThread(LPVOID); 
 	static DWORD CALLBACK playerThread(LPVOID);
 	static DWORD CALLBACK recordThread(LPVOID); 
+	static DWORD CALLBACK MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD dwInstance,DWORD dwParam1,DWORD dwParam2);
 private:
-	static const int PCM_RATE = 8000;  //刺激率 
-	static const int PCM_SAMPLE_RATE = 44100;  //采样率 	
+	static const int PCM_IN_RATE = 8000;  //刺激率 
+	static const int PCM_OUT_RATE = 44100;  //采样率 	
 	static const int OUT_BUF_MAX = 4;
 	static const int OUT_BUF_SIZE = 4096;
 	static const int IN_BUF_MAX = 4;
 	static const int IN_BUF_SIZE = 320;
-	static const int SEND_BUF_SIZE = 320;
-	char *recvBuf[OUT_BUF_SIZE];
-	char *sendBuf[IN_BUF_SIZE];
+	char *outBuf[OUT_BUF_SIZE];
+	char *inBuf[IN_BUF_SIZE];
 
     SOCKET slisten;
 	SOCKET sock_cli;
+
 	WAVEFORMATEX pOutFormat; 
-	WAVEHDR WaveOutHdr[OUT_BUF_MAX]; 
+	WAVEHDR      WaveOutHdr[OUT_BUF_MAX]; 
+	HWAVEOUT     hWaveOut;
 
 	WAVEFORMATEX pInFormat; 
-	WAVEHDR WaveIntHdr[OUT_BUF_MAX]; 
+	WAVEHDR      WaveInHdr[IN_BUF_SIZE]; 	 
+	HWAVEIN      hWaveIn; 
+	int i_in_count;
 
 	int is_stop;
+	HWND mHwnd;
 public:
 	HANDLE m_socketThread;  
 	HANDLE m_playerThread;  
