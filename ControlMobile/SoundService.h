@@ -1,5 +1,4 @@
 #include <MMSystem.h> 
-#include "math.h"
 #include <winsock2.h>
 #include <windows.h>
 #pragma comment(lib,"ws2_32.lib")
@@ -8,28 +7,35 @@
 class SoundService
 {
 public:
-	SoundService(HWND hwnd);
+	SoundService(void);
 	~SoundService(void);
-	void startPlay();
-	void stopPlay();
-	void startSpeak();
-	void stopSpeak();
+	void startPlay(void);
+	void stopPlay(void);
+	void startSpeak(void);
+	void stopSpeak(void);
+	void playFile(void);	
 private:
 	static DWORD CALLBACK socketThread(LPVOID); 
 	static DWORD CALLBACK playerThread(LPVOID);
 	static DWORD CALLBACK recordThread(LPVOID); 
 	static DWORD CALLBACK MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD dwInstance,DWORD dwParam1,DWORD dwParam2);
 private:
-	static const int PCM_IN_RATE = 8000;  //刺激率 
-	static const int PCM_OUT_RATE = 44100;  //采样率 	
-	static const int OUT_BUF_MAX = 4;
+	static const int mPort = 18183;	
+
+	char *recv_buf;
+	char *send_buf;
+	
+	static const int PCM_IN_RATE = 8000;  //话筒采样率
+	static const int OUT_BUF_MAX = 8;
 	static const int OUT_BUF_SIZE = 4096;
+	char *outBuf[OUT_BUF_SIZE];
+
+	static const int PCM_OUT_RATE = 16000;  //播放采样率 
 	static const int IN_BUF_MAX = 2;
 	static const int IN_BUF_SIZE = 320;	
-	char *outBuf[OUT_BUF_SIZE];
 	char *inBuf[IN_BUF_SIZE];
 
-    SOCKET slisten;
+    SOCKET sock_lis;
 	SOCKET sock_cli;
 
 	WAVEFORMATEX pOutFormat; 
@@ -42,7 +48,8 @@ private:
 	int send_count;
 	int is_stop;
 	int is_speak;
-	HWND mHwnd;
+	int recv_fail_count;
+
 	FILE *inFile;
 
 public:
