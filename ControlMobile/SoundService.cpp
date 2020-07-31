@@ -99,8 +99,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 	FILE *saveFile = fopen("D:\\res\\music\\record2s16k.pcm","wb");
 	while (mPtr->is_stop == 0)	{
 		memset(mPtr->recv_buf,0,5016);
-		int recvLen = recv(mPtr->sock_cli, mPtr->recv_buf, 5016, 0);
-		//TRACE("read recvLen=%d, number=%d. sokcet=%d.\n",recvLen,j,mPtr->sock_cli);
+		int recvLen = recv(mPtr->sock_cli, mPtr->recv_buf, 5016, 0);		
 		if(recv_fail_count>10){
 			closesocket(mPtr->sock_cli);
 			TRACE("playerThread exit. \n"); 
@@ -113,7 +112,12 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 			break;
 		}
 		recv_fail_count=0;
-		long allLen = ((mPtr->recv_buf[2]<<24)&0xFF000000)+((mPtr->recv_buf[3]<<16)&0xFF0000)+((mPtr->recv_buf[4]<<8)&0xFF00)+mPtr->recv_buf[5];
+		long allLen = 0;
+		if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)){
+			allLen = ((mPtr->recv_buf[2]<<24)&0xFF000000)+((mPtr->recv_buf[3]<<16)&0xFF0000)+((mPtr->recv_buf[4]<<8)&0xFF00)+mPtr->recv_buf[5];
+		}else{
+			break;
+		}
 		//TRACE("allLen=%d. sokcet=%d.\n",allLen,mPtr->sock_cli);
 		while (recvLen<(allLen+4)){
 			int ret = recv(mPtr->sock_cli, mPtr->recv_buf+recvLen, (allLen+4-recvLen), 0);
@@ -131,7 +135,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 		}
 
 		while(recvLen>=6){
-			if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4a)) {
+			if((mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4a)) {
 				TRACE("recv start play.\n");	
 				int len = sizeof(PC_START_PLAY);
 				if(recvLen-len>0){
@@ -141,7 +145,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 				//TODO:
 			}else if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4b)) {
 				int dataLen = ((mPtr->recv_buf[10]<<24)&0xFF000000)+((mPtr->recv_buf[11]<<16)&0xFF0000)+((mPtr->recv_buf[12]<<8)&0xFF00)+mPtr->recv_buf[13];
-				//TRACE("recv play data, dataLen=%d\n",dataLen);
+				TRACE("recv play data, dataLen=%d\n",dataLen);
 				memcpy(mPtr->outBuf[i],mPtr->recv_buf+14,dataLen);
 				fwrite(mPtr->outBuf[i],1,dataLen,saveFile);
 				mPtr->WaveOutHdr[i].lpData = mPtr->outBuf[i];
@@ -181,6 +185,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
 				}
 				recvLen-=len;
+				mPtr->startSpeak();
 				//TODO:
 			}else if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x52)) {
 				TRACE("recv close speak.\n");	
@@ -189,6 +194,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
 				}
 				recvLen-=len;
+				mPtr->stopSpeak();
 				//TODO:
 			}else{
 				recvLen = 0;
@@ -294,8 +300,20 @@ DWORD SoundService::MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD lp,DWORD dw1,DWO
 		break;
 	case MM_WIM_DATA:
 		//TRACE("MM_WIM_DATA.\n"); 
+		//音频数据接口（PC—>手机 ）
+		//开始符号	2字节	Unsigned Integer	固定的开始符号0x7ea5
+		//消息长度	4字节	Unsigned Integer	消息总长度，不包括开始和结束符
+		//协议版本	2字节	Unsigned Integer	协议版本号，高位在前，从1开始
+		//消息ID	2字节	Unsigned Integer	命令号0x0451
+		//数据长度	4字节	Unsigned Integer	data len
+		//数据	x	byte	音频数据
+		//结束符号	2字节	Unsigned Integer	固定的结束符号0x7e0d
+		//const static char PC_SPEAK_DATA[16] = {0x7e,0xa5,0x00,0x00,0x00,0x08,0x00,0x01,0x04,0x51,0x00,0x00,0x00,0x00,0x73,0x0d};
 		if(mPtr->is_stop==0 && mPtr->is_speak == 1) {
-			int sendLen=send(mPtr->sock_cli, pWaveInHdr->lpData, IN_BUF_SIZE, 0);
+			memcpy(mPtr->send_buf,PC_SPEAK_DATA,14);
+			memcpy(mPtr->send_buf+14,pWaveInHdr->lpData,IN_BUF_SIZE);
+			memcpy(mPtr->send_buf+14+IN_BUF_SIZE,PC_SPEAK_DATA+14,2);
+			int sendLen=send(mPtr->sock_cli, mPtr->send_buf, IN_BUF_SIZE+16, 0);
 			//fwrite(pWaveInHdr->lpData,1,IN_BUF_SIZE,mPtr->inFile);
 			TRACE("send sendLen=%d, number=%d, sokcet=%d.\n",sendLen,mPtr->send_count,mPtr->sock_cli);
 			mPtr->send_count++;
@@ -348,12 +366,6 @@ char b[8];
 void SoundService::stopSpeak(void)
 {	
 	//fclose(inFile);
-	char a[4] = {'a','c','c','d'};
-	TRACE("memcpy test a=%s, b=%s.",a,b); 
-	memcpy(b,a,4);
-	memcpy(b+4,a+2,2);
-	memcpy(b+6,a+1,2);
-	TRACE("memcpy test a=%s, b=%s.",a,b); 
 	if(is_speak == 1){
 		is_speak = 0;
 		waveInStop(hWaveIn);
