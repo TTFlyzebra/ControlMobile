@@ -96,7 +96,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 	}
 	int recv_fail_count = 0;
 	//int j = 0;
-	FILE *saveFile = fopen("D:\\res\\music\\record2s16k.pcm","wb");
+	//FILE *saveFile = fopen("D:\\res\\music\\record2s16k.pcm","wb");
 	while (mPtr->is_stop == 0)	{
 		memset(mPtr->recv_buf,0,5016);
 		int recvLen = recv(mPtr->sock_cli, mPtr->recv_buf, 5016, 0);		
@@ -136,7 +136,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 
 		while(recvLen>=6){
 			if((mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4a)) {
-				TRACE("recv start play.\n");	
+				//TRACE("recv start play.\n");	
 				int len = sizeof(PC_START_PLAY);
 				if(recvLen-len>0){
 					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
@@ -145,9 +145,9 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 				//TODO:
 			}else if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4b)) {
 				int dataLen = ((mPtr->recv_buf[10]<<24)&0xFF000000)+((mPtr->recv_buf[11]<<16)&0xFF0000)+((mPtr->recv_buf[12]<<8)&0xFF00)+mPtr->recv_buf[13];
-				TRACE("recv play data, dataLen=%d\n",dataLen);
+				//TRACE("recv play data, dataLen=%d\n",dataLen);
 				memcpy(mPtr->outBuf[i],mPtr->recv_buf+14,dataLen);
-				fwrite(mPtr->outBuf[i],1,dataLen,saveFile);
+				//fwrite(mPtr->outBuf[i],1,dataLen,saveFile);
 				mPtr->WaveOutHdr[i].lpData = mPtr->outBuf[i];
 				mPtr->WaveOutHdr[i].dwBufferLength = dataLen;
 				mPtr->WaveOutHdr[i].dwUser = 0L;
@@ -240,7 +240,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 		}
 	}	
 
-	fclose(saveFile);
+	//fclose(saveFile);
 		
 	for(int n = 0;i<OUT_BUF_MAX;i++){
 		while(waveOutUnprepareHeader(mPtr->hWaveOut,&mPtr->WaveOutHdr[i],sizeof(WAVEHDR)) == WAVERR_STILLPLAYING){
@@ -299,16 +299,6 @@ DWORD SoundService::MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD lp,DWORD dw1,DWO
 		TRACE("MM_WIM_OPEN.\n"); 
 		break;
 	case MM_WIM_DATA:
-		//TRACE("MM_WIM_DATA.\n"); 
-		//音频数据接口（PC—>手机 ）
-		//开始符号	2字节	Unsigned Integer	固定的开始符号0x7ea5
-		//消息长度	4字节	Unsigned Integer	消息总长度，不包括开始和结束符
-		//协议版本	2字节	Unsigned Integer	协议版本号，高位在前，从1开始
-		//消息ID	2字节	Unsigned Integer	命令号0x0451
-		//数据长度	4字节	Unsigned Integer	data len
-		//数据	x	byte	音频数据
-		//结束符号	2字节	Unsigned Integer	固定的结束符号0x7e0d
-		//const static char PC_SPEAK_DATA[16] = {0x7e,0xa5,0x00,0x00,0x00,0x08,0x00,0x01,0x04,0x51,0x00,0x00,0x00,0x00,0x73,0x0d};
 		if(mPtr->is_stop==0 && mPtr->is_speak == 1) {
 			memcpy(mPtr->send_buf,PC_SPEAK_DATA,14);
 			memcpy(mPtr->send_buf+14,pWaveInHdr->lpData,IN_BUF_SIZE);

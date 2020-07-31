@@ -8,74 +8,74 @@
 #if __cplusplus
 extern "C" {
 #endif
-//éŸ³é¢‘æ’­æ”¾æ¥å£
-//å‡†å¤‡æ’­æ”¾æ¥å£ï¼ˆæ‰‹æœº-->PC ï¼‰
-//å¼€å§‹ç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„å¼€å§‹ç¬¦å·0x7ea5
-//æ¶ˆæ¯é•¿åº¦	4å­—èŠ‚	Unsigned Integer	æ¶ˆæ¯æ€»é•¿åº¦ï¼Œä¸åŒ…æ‹¬å¼€å§‹å’Œç»“æŸç¬¦
-//åè®®ç‰ˆæœ¬	2å­—èŠ‚	Unsigned Integer	åè®®ç‰ˆæœ¬å·ï¼Œé«˜ä½åœ¨å‰ï¼Œä»1å¼€å§‹
-//æ¶ˆæ¯ID	2å­—èŠ‚	Unsigned Integer	å‘½ä»¤å·0x044a
-//é‡‡æ ·ç‡	2å­—èŠ‚	Unsigned Integer	é‡‡æ ·ç‡ï¼Œå•ä½Hzï¼Œå¦‚ï¼š16000Hz
-//é€šé“æ•°	2å­—èŠ‚	Unsigned Integer	å•å£°é“ï¼š4 åŒå£°é“ï¼š   12
-//éŸ³é¢‘æ ¼å¼	2å­—èŠ‚	Unsigned Integer	2ï¼šENCODING_PCM_16BIT 3ï¼šENCODING_PCM_8BIT 4ï¼šENCODING_PCM_FLOAT
-//ç»“æŸç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„ç»“æŸç¬¦å·0x7e0d
-const static char PC_START_PLAY[18] = {0x7e,0xa5,0x00,0x00,0x00,0x0e,0x00,0x01,0x04,0x4a,0x3e,0x80,0x00,0x0c,0x00,0x02,0x73,0x0d};
+//ÒôÆµ²¥·Å½Ó¿Ú
+//×¼±¸²¥·Å½Ó¿Ú£¨ÊÖ»ú-->PC £©
+//¿ªÊ¼·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ¿ªÊ¼·ûºÅ0x7ea5
+//ÏûÏ¢³¤¶È	4×Ö½Ú	Unsigned Integer	ÏûÏ¢×Ü³¤¶È£¬²»°üÀ¨¿ªÊ¼ºÍ½áÊø·û
+//Ğ­Òé°æ±¾	2×Ö½Ú	Unsigned Integer	Ğ­Òé°æ±¾ºÅ£¬¸ßÎ»ÔÚÇ°£¬´Ó1¿ªÊ¼
+//ÏûÏ¢ID	2×Ö½Ú	Unsigned Integer	ÃüÁîºÅ0x044a
+//²ÉÑùÂÊ	2×Ö½Ú	Unsigned Integer	²ÉÑùÂÊ£¬µ¥Î»Hz£¬Èç£º16000Hz
+//Í¨µÀÊı	2×Ö½Ú	Unsigned Integer	µ¥ÉùµÀ£º4 Ë«ÉùµÀ£º   12
+//ÒôÆµ¸ñÊ½	2×Ö½Ú	Unsigned Integer	2£ºENCODING_PCM_16BIT 3£ºENCODING_PCM_8BIT 4£ºENCODING_PCM_FLOAT
+//½áÊø·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ½áÊø·ûºÅ0x7e0d
+const static byte PC_START_PLAY[18] = {0x7e,0xa5,0x00,0x00,0x00,0x0e,0x00,0x01,0x04,0x4a,0x3e,0x80,0x00,0x0c,0x00,0x02,0x73,0x0d};
 
-//éŸ³é¢‘æ•°æ®ä¼ è¾“æ¥å£ï¼ˆæ‰‹æœº-->PC ï¼‰
-//å¼€å§‹ç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„å¼€å§‹ç¬¦å·0x7ea5
-//æ¶ˆæ¯é•¿åº¦	4å­—èŠ‚	Unsigned Integer	æ¶ˆæ¯æ€»é•¿åº¦ï¼Œä¸åŒ…æ‹¬å¼€å§‹å’Œç»“æŸç¬¦
-//åè®®ç‰ˆæœ¬	2å­—èŠ‚	Unsigned Integer	åè®®ç‰ˆæœ¬å·ï¼Œé«˜ä½åœ¨å‰ï¼Œä»1å¼€å§‹
-//æ¶ˆæ¯ID	2å­—èŠ‚	Unsigned Integer	å‘½ä»¤å·0x044b
-//æ•°æ®é•¿åº¦	4å­—èŠ‚	Unsigned Integer	data len
-//æ•°æ®	x	byte	éŸ³é¢‘æ•°æ®
-//ç»“æŸç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„ç»“æŸç¬¦å·0x7e0d
-const static char PC_PLAY_DATA[16] = {0x7e,0xa5,0x00,0x00,0x00,0x0c,0x00,0x01,0x04,0x4b,0x00,0x00,0x00,0x00,0x73,0x0d};
+//ÒôÆµÊı¾İ´«Êä½Ó¿Ú£¨ÊÖ»ú-->PC £©
+//¿ªÊ¼·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ¿ªÊ¼·ûºÅ0x7ea5
+//ÏûÏ¢³¤¶È	4×Ö½Ú	Unsigned Integer	ÏûÏ¢×Ü³¤¶È£¬²»°üÀ¨¿ªÊ¼ºÍ½áÊø·û
+//Ğ­Òé°æ±¾	2×Ö½Ú	Unsigned Integer	Ğ­Òé°æ±¾ºÅ£¬¸ßÎ»ÔÚÇ°£¬´Ó1¿ªÊ¼
+//ÏûÏ¢ID	2×Ö½Ú	Unsigned Integer	ÃüÁîºÅ0x044b
+//Êı¾İ³¤¶È	4×Ö½Ú	Unsigned Integer	data len
+//Êı¾İ	x	byte	ÒôÆµÊı¾İ
+//½áÊø·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ½áÊø·ûºÅ0x7e0d
+const static byte PC_PLAY_DATA[16] = {0x7e,0xa5,0x00,0x00,0x00,0x0c,0x00,0x01,0x04,0x4b,0x00,0x00,0x00,0x00,0x73,0x0d};
 
-//æš‚åœæ’­æ”¾æ¥å£ï¼ˆæ‰‹æœº-->PC ï¼‰
-//å¼€å§‹ç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„å¼€å§‹ç¬¦å·0x7ea5
-//æ¶ˆæ¯é•¿åº¦	4å­—èŠ‚	Unsigned Integer	æ¶ˆæ¯æ€»é•¿åº¦ï¼Œä¸åŒ…æ‹¬å¼€å§‹å’Œç»“æŸç¬¦
-//åè®®ç‰ˆæœ¬	2å­—èŠ‚	Unsigned Integer	åè®®ç‰ˆæœ¬å·ï¼Œé«˜ä½åœ¨å‰ï¼Œä»1å¼€å§‹
-//æ¶ˆæ¯ID	2å­—èŠ‚	Unsigned Integer	å‘½ä»¤å·0x044c
-//ç»“æŸç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„ç»“æŸç¬¦å·0x7e0d
-const static char PC_PAUSE_PLAY[12] = {0x7e,0xa5,0x00,0x00,0x00,0x08,0x00,0x01,0x04,0x4c,0x73,0x0d};
+//ÔİÍ£²¥·Å½Ó¿Ú£¨ÊÖ»ú-->PC £©
+//¿ªÊ¼·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ¿ªÊ¼·ûºÅ0x7ea5
+//ÏûÏ¢³¤¶È	4×Ö½Ú	Unsigned Integer	ÏûÏ¢×Ü³¤¶È£¬²»°üÀ¨¿ªÊ¼ºÍ½áÊø·û
+//Ğ­Òé°æ±¾	2×Ö½Ú	Unsigned Integer	Ğ­Òé°æ±¾ºÅ£¬¸ßÎ»ÔÚÇ°£¬´Ó1¿ªÊ¼
+//ÏûÏ¢ID	2×Ö½Ú	Unsigned Integer	ÃüÁîºÅ0x044c
+//½áÊø·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ½áÊø·ûºÅ0x7e0d
+const static byte PC_PAUSE_PLAY[12] = {0x7e,0xa5,0x00,0x00,0x00,0x08,0x00,0x01,0x04,0x4c,0x73,0x0d};
 
-//æ’­æ”¾å®Œæˆæ¥å£ ï¼ˆæ‰‹æœº-->PC ï¼‰
-//å¼€å§‹ç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„å¼€å§‹ç¬¦å·0x7ea5
-//æ¶ˆæ¯é•¿åº¦	4å­—èŠ‚	Unsigned Integer	æ¶ˆæ¯æ€»é•¿åº¦ï¼Œä¸åŒ…æ‹¬å¼€å§‹å’Œç»“æŸç¬¦
-//åè®®ç‰ˆæœ¬	2å­—èŠ‚	Unsigned Integer	åè®®ç‰ˆæœ¬å·ï¼Œé«˜ä½åœ¨å‰ï¼Œä»1å¼€å§‹
-//æ¶ˆæ¯ID	2å­—èŠ‚	Unsigned Integer	å‘½ä»¤å·0x044d
-//ç»“æŸç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„ç»“æŸç¬¦å·0x7e0d
-const static char PC_STOP_PLAY[12] = {0x7e,0xa5,0x00,0x00,0x00,0x08,0x00,0x01,0x04,0x4d,0x73,0x0d};
+//²¥·ÅÍê³É½Ó¿Ú £¨ÊÖ»ú-->PC £©
+//¿ªÊ¼·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ¿ªÊ¼·ûºÅ0x7ea5
+//ÏûÏ¢³¤¶È	4×Ö½Ú	Unsigned Integer	ÏûÏ¢×Ü³¤¶È£¬²»°üÀ¨¿ªÊ¼ºÍ½áÊø·û
+//Ğ­Òé°æ±¾	2×Ö½Ú	Unsigned Integer	Ğ­Òé°æ±¾ºÅ£¬¸ßÎ»ÔÚÇ°£¬´Ó1¿ªÊ¼
+//ÏûÏ¢ID	2×Ö½Ú	Unsigned Integer	ÃüÁîºÅ0x044d
+//½áÊø·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ½áÊø·ûºÅ0x7e0d
+const static byte PC_STOP_PLAY[12] = {0x7e,0xa5,0x00,0x00,0x00,0x08,0x00,0x01,0x04,0x4d,0x73,0x0d};
 
-//éŸ³é¢‘å½•åˆ¶æ¥å£
-//å‡†å¤‡å½•éŸ³æ¥å£ ï¼ˆæ‰‹æœº-->PC ï¼‰
-//å¼€å§‹ç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„å¼€å§‹ç¬¦å·0x7ea5
-//æ¶ˆæ¯é•¿åº¦	4å­—èŠ‚	Unsigned Integer	æ¶ˆæ¯æ€»é•¿åº¦ï¼Œä¸åŒ…æ‹¬å¼€å§‹å’Œç»“æŸç¬¦
-//åè®®ç‰ˆæœ¬	2å­—èŠ‚	Unsigned Integer	åè®®ç‰ˆæœ¬å·ï¼Œé«˜ä½åœ¨å‰ï¼Œä»1å¼€å§‹
-//æ¶ˆæ¯ID	2å­—èŠ‚	Unsigned Integer	å‘½ä»¤å·0x0450
-//é‡‡æ ·ç‡	2å­—èŠ‚	Unsigned Integer	é‡‡æ ·ç‡ï¼Œå•ä½Hzï¼Œå¦‚ï¼š16000Hz
-//é€šé“æ•°	2å­—èŠ‚	Unsigned Integer	å•å£°é“ï¼š4 åŒå£°é“ï¼š12
-//éŸ³é¢‘æ ¼å¼	2å­—èŠ‚	Unsigned Integer	2ï¼šENCODING_PCM_16BIT 3ï¼šENCODING_PCM_8BIT 4ï¼šENCODING_PCM_FLOAT
-//ç¼“å†²å¤§å°	2å­—èŠ‚	Unsigned Integer	ç¼“å†²å­—èŠ‚æ•°
-//ç»“æŸç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„ç»“æŸç¬¦å·0x7e0d
-const static char PC_OPEN_SPEAK[20] = {0x7e,0xa5,0x00,0x00,0x00,0x10,0x00,0x01,0x04,0x50,0x1f,0x40,0x00,0x0c,0x00,0x02,0x01,0x40,0x73,0x0d};
+//ÒôÆµÂ¼ÖÆ½Ó¿Ú
+//×¼±¸Â¼Òô½Ó¿Ú £¨ÊÖ»ú-->PC £©
+//¿ªÊ¼·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ¿ªÊ¼·ûºÅ0x7ea5
+//ÏûÏ¢³¤¶È	4×Ö½Ú	Unsigned Integer	ÏûÏ¢×Ü³¤¶È£¬²»°üÀ¨¿ªÊ¼ºÍ½áÊø·û
+//Ğ­Òé°æ±¾	2×Ö½Ú	Unsigned Integer	Ğ­Òé°æ±¾ºÅ£¬¸ßÎ»ÔÚÇ°£¬´Ó1¿ªÊ¼
+//ÏûÏ¢ID	2×Ö½Ú	Unsigned Integer	ÃüÁîºÅ0x0450
+//²ÉÑùÂÊ	2×Ö½Ú	Unsigned Integer	²ÉÑùÂÊ£¬µ¥Î»Hz£¬Èç£º16000Hz
+//Í¨µÀÊı	2×Ö½Ú	Unsigned Integer	µ¥ÉùµÀ£º4 Ë«ÉùµÀ£º12
+//ÒôÆµ¸ñÊ½	2×Ö½Ú	Unsigned Integer	2£ºENCODING_PCM_16BIT 3£ºENCODING_PCM_8BIT 4£ºENCODING_PCM_FLOAT
+//»º³å´óĞ¡	2×Ö½Ú	Unsigned Integer	»º³å×Ö½ÚÊı
+//½áÊø·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ½áÊø·ûºÅ0x7e0d
+const static byte PC_OPEN_SPEAK[20] = {0x7e,0xa5,0x00,0x00,0x00,0x10,0x00,0x01,0x04,0x50,0x1f,0x40,0x00,0x0c,0x00,0x02,0x01,0x40,0x73,0x0d};
 
-//éŸ³é¢‘æ•°æ®æ¥å£ï¼ˆPCâ€”>æ‰‹æœº ï¼‰
-//å¼€å§‹ç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„å¼€å§‹ç¬¦å·0x7ea5
-//æ¶ˆæ¯é•¿åº¦	4å­—èŠ‚	Unsigned Integer	æ¶ˆæ¯æ€»é•¿åº¦ï¼Œä¸åŒ…æ‹¬å¼€å§‹å’Œç»“æŸç¬¦
-//åè®®ç‰ˆæœ¬	2å­—èŠ‚	Unsigned Integer	åè®®ç‰ˆæœ¬å·ï¼Œé«˜ä½åœ¨å‰ï¼Œä»1å¼€å§‹
-//æ¶ˆæ¯ID	2å­—èŠ‚	Unsigned Integer	å‘½ä»¤å·0x0451
-//æ•°æ®é•¿åº¦	4å­—èŠ‚	Unsigned Integer	data len
-//æ•°æ®	x	byte	éŸ³é¢‘æ•°æ®
-//ç»“æŸç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„ç»“æŸç¬¦å·0x7e0d
-const static char PC_SPEAK_DATA[16] = {0x7e,0xa5,0x00,0x00,0x00,0x08,0x00,0x01,0x04,0x51,0x00,0x00,0x00,0x00,0x73,0x0d};
+//ÒôÆµÊı¾İ½Ó¿Ú£¨PC¡ª>ÊÖ»ú £©
+//¿ªÊ¼·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ¿ªÊ¼·ûºÅ0x7ea5
+//ÏûÏ¢³¤¶È	4×Ö½Ú	Unsigned Integer	ÏûÏ¢×Ü³¤¶È£¬²»°üÀ¨¿ªÊ¼ºÍ½áÊø·û
+//Ğ­Òé°æ±¾	2×Ö½Ú	Unsigned Integer	Ğ­Òé°æ±¾ºÅ£¬¸ßÎ»ÔÚÇ°£¬´Ó1¿ªÊ¼
+//ÏûÏ¢ID	2×Ö½Ú	Unsigned Integer	ÃüÁîºÅ0x0451
+//Êı¾İ³¤¶È	4×Ö½Ú	Unsigned Integer	data len
+//Êı¾İ	x	byte	ÒôÆµÊı¾İ
+//½áÊø·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ½áÊø·ûºÅ0x7e0d
+const static byte PC_SPEAK_DATA[16] = {0x7e,0xa5,0x00,0x00,0x00,0x08,0x00,0x01,0x04,0x51,0x00,0x00,0x00,0x00,0x73,0x0d};
 
-//å½•éŸ³ç»“æŸæ¥å£ï¼ˆæ‰‹æœº-->PC ï¼‰
-//å¼€å§‹ç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„å¼€å§‹ç¬¦å·0x7ea5
-//æ¶ˆæ¯é•¿åº¦	4å­—èŠ‚	Unsigned Integer	æ¶ˆæ¯æ€»é•¿åº¦ï¼Œä¸åŒ…æ‹¬å¼€å§‹å’Œç»“æŸç¬¦
-//åè®®ç‰ˆæœ¬	2å­—èŠ‚	Unsigned Integer	åè®®ç‰ˆæœ¬å·ï¼Œé«˜ä½åœ¨å‰ï¼Œä»1å¼€å§‹
-//æ¶ˆæ¯ID	2å­—èŠ‚	Unsigned Integer	å‘½ä»¤å·0x0452
-//ç»“æŸç¬¦å·	2å­—èŠ‚	Unsigned Integer	å›ºå®šçš„ç»“æŸç¬¦å·0x7e0d
-const static char PC_CLOSE_SPEAK[12] = {0x7e,0xa5,0x00,0x00,0x00,0x08,0x00,0x01,0x04,0x52,0x73,0x0d};
+//Â¼Òô½áÊø½Ó¿Ú£¨ÊÖ»ú-->PC £©
+//¿ªÊ¼·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ¿ªÊ¼·ûºÅ0x7ea5
+//ÏûÏ¢³¤¶È	4×Ö½Ú	Unsigned Integer	ÏûÏ¢×Ü³¤¶È£¬²»°üÀ¨¿ªÊ¼ºÍ½áÊø·û
+//Ğ­Òé°æ±¾	2×Ö½Ú	Unsigned Integer	Ğ­Òé°æ±¾ºÅ£¬¸ßÎ»ÔÚÇ°£¬´Ó1¿ªÊ¼
+//ÏûÏ¢ID	2×Ö½Ú	Unsigned Integer	ÃüÁîºÅ0x0452
+//½áÊø·ûºÅ	2×Ö½Ú	Unsigned Integer	¹Ì¶¨µÄ½áÊø·ûºÅ0x7e0d
+const static byte PC_CLOSE_SPEAK[12] = {0x7e,0xa5,0x00,0x00,0x00,0x08,0x00,0x01,0x04,0x52,0x73,0x0d};
 
 #if __cplusplus
 };  // extern "C"

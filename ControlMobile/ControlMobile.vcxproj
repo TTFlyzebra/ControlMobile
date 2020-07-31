@@ -101,9 +101,9 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="protocol.h" />
     <ClInclude Include="ControlMobile.h" />
     <ClInclude Include="ControlMobileDlg.h" />
-    <ClInclude Include="protocol.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SoundService.h" />
     <ClInclude Include="stdafx.h" />
