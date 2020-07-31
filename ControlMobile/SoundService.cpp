@@ -95,16 +95,15 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 		return -1;
 	}
 	int recv_fail_count = 0;
-	int j = 0;
-	//FILE *saveFile;
-	//saveFile = fopen("D:\\res\\music\\record16k.pcm","wb");
+	//int j = 0;
+	FILE *saveFile = fopen("D:\\res\\music\\record2s16k.pcm","wb");
 	while (mPtr->is_stop == 0)	{
-		//memset(recvBuf[i],0,OUT_BUF_SIZE);
+		memset(mPtr->recv_buf,0,5016);
 		int recvLen = recv(mPtr->sock_cli, mPtr->recv_buf, 5016, 0);
-		TRACE("read recvLen=%d, number=%d. sokcet=%d.\n",recvLen,j,mPtr->sock_cli);
-		j++;	
+		//TRACE("read recvLen=%d, number=%d. sokcet=%d.\n",recvLen,j,mPtr->sock_cli);
 		if(recv_fail_count>10){
 			closesocket(mPtr->sock_cli);
+			TRACE("playerThread exit. \n"); 
 			return -1;
 		}
         if(recvLen < 6 ) {
@@ -114,53 +113,129 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 			break;
 		}
 		recv_fail_count=0;
-		int allLen = ((mPtr->recv_buf[2]<<24)&0xFF000000)+((mPtr->recv_buf[3]<<16)&0xFF0000)+((mPtr->recv_buf[4]<<8)&0xFF00)+mPtr->recv_buf[5];
-		TRACE("read recvLen=%d, allLen=%d. sokcet=%d.\n",recvLen,allLen);
+		long allLen = ((mPtr->recv_buf[2]<<24)&0xFF000000)+((mPtr->recv_buf[3]<<16)&0xFF0000)+((mPtr->recv_buf[4]<<8)&0xFF00)+mPtr->recv_buf[5];
+		//TRACE("allLen=%d. sokcet=%d.\n",allLen,mPtr->sock_cli);
 		while (recvLen<(allLen+4)){
 			int ret = recv(mPtr->sock_cli, mPtr->recv_buf+recvLen, (allLen+4-recvLen), 0);
 			if(ret<0){
 				recv_fail_count++;	
 			}else{
-				recv_fail_count=0;
+				recv_fail_count=0;				
 				recvLen+=ret;
 			}
 			if(recv_fail_count>10){
 				closesocket(mPtr->sock_cli);
+				TRACE("playerThread exit. \n"); 
 				return -1;
 			}
 		}
-        int ptr = 0;
-		while(ptr < recvLen){
-		    if((mPtr->recv_buf[ptr+0]^0x7e==0)&&(mPtr->recv_buf[ptr+1]^0xa5==0)&&(mPtr->recv_buf[ptr+8]^0x04==0)&&(mPtr->recv_buf[ptr+9]^0x4b==0)) {
-		        long dataLen = ((mPtr->recv_buf[ptr+10]<<24)&0xFF000000)+((mPtr->recv_buf[ptr+11]<<16)&0xFF0000)+((mPtr->recv_buf[ptr+12]<<8)&0xFF00)+mPtr->recv_buf[ptr+13];
-				TRACE("read dataLen=%d.\n",dataLen);
-				ptr = recvLen;
-		        //ptr+=dataLen;
-		        //if((recvLen<=(ptr+2))&&(mPtr->recv_buf[ptr]==0x73)&&(mPtr->recv_buf[ptr+1]==0x0d)){
-		        //    memcpy(mPtr->outBuf[i],mPtr->recv_buf+ptr+14,dataLen);
-				//	TRACE("read memcpy, mPtr=%d. dataLen=%d.\n",mPtr,dataLen);
-				//	//fwrite(mPtr->outBuf[i],1,recvLen,saveFile);
-				//	memcpy(mPtr->outBuf[i],mPtr->recv_buf+14,recvLen-16);
-				//	mPtr->WaveOutHdr[i].lpData = mPtr->outBuf[i];
-				//	mPtr->WaveOutHdr[i].dwBufferLength = recvLen;
-				//	mPtr->WaveOutHdr[i].dwUser = 0L;
-				//	mPtr->WaveOutHdr[i].dwFlags = 0L;
-				//	mPtr->WaveOutHdr[i].dwLoops = 0L;
-				//	waveOutPrepareHeader(mPtr->hWaveOut, &mPtr->WaveOutHdr[i], sizeof(WAVEHDR));
-				//	waveOutWrite(mPtr->hWaveOut, &mPtr->WaveOutHdr[i], sizeof(WAVEHDR));
-				//	i++;	
-				//	if(i>=OUT_BUF_MAX) i = 0;
-		        //    ptr+=2;
-		        //}else{
-		        //    break;
-		        //}
-		    }else{
-		        break;
-		    }
+
+		while(recvLen>=6){
+			if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4a)) {
+				TRACE("recv start play.\n");	
+				int len = sizeof(PC_START_PLAY);
+				if(recvLen-len>0){
+					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
+				}
+				recvLen-=len;
+				//TODO:
+			}else if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4b)) {
+				int dataLen = ((mPtr->recv_buf[10]<<24)&0xFF000000)+((mPtr->recv_buf[11]<<16)&0xFF0000)+((mPtr->recv_buf[12]<<8)&0xFF00)+mPtr->recv_buf[13];
+				//TRACE("recv play data, dataLen=%d\n",dataLen);
+				memcpy(mPtr->outBuf[i],mPtr->recv_buf+14,dataLen);
+				fwrite(mPtr->outBuf[i],1,dataLen,saveFile);
+				mPtr->WaveOutHdr[i].lpData = mPtr->outBuf[i];
+				mPtr->WaveOutHdr[i].dwBufferLength = dataLen;
+				mPtr->WaveOutHdr[i].dwUser = 0L;
+				mPtr->WaveOutHdr[i].dwFlags = 0L;
+				mPtr->WaveOutHdr[i].dwLoops = 0L;
+				waveOutPrepareHeader(mPtr->hWaveOut, &mPtr->WaveOutHdr[i], sizeof(WAVEHDR));
+				waveOutWrite(mPtr->hWaveOut, &mPtr->WaveOutHdr[i], sizeof(WAVEHDR));
+				i++;	
+				if(i>=OUT_BUF_MAX) i = 0;
+				int len = dataLen+sizeof(PC_PLAY_DATA);
+				if(recvLen-len>0){
+					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
+				}
+				recvLen-=len;
+			}else if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4c)) {
+				TRACE("recv pause play.\n");	
+				int len = sizeof(PC_PAUSE_PLAY);
+				if(recvLen-len>0){
+					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
+				}
+				recvLen-=len;
+				//TODO:
+			}else if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4d)) {
+				TRACE("recv stop play.\n");	
+				int len = sizeof(PC_STOP_PLAY);
+				if(recvLen-len>0){
+					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
+				}
+				recvLen-=len;
+				//TODO:
+			}else if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x50)) {
+				TRACE("recv open speak.\n");	
+				int len = sizeof(PC_OPEN_SPEAK);
+				if(recvLen-len>0){
+					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
+				}
+				recvLen-=len;
+				//TODO:
+			}else if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x52)) {
+				TRACE("recv close speak.\n");	
+				int len = sizeof(PC_CLOSE_SPEAK);
+				if(recvLen-len>0){
+					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
+				}
+				recvLen-=len;
+				//TODO:
+			}else{
+				recvLen = 0;
+			}
+
+			if(recvLen>0){
+				while (recvLen<6){
+					int ret = recv(mPtr->sock_cli, mPtr->recv_buf+recvLen, (6-recvLen), 0);
+					TRACE("1 allLen=%d. recvLen=%d. ret=%d\n",allLen,recvLen,ret);
+					if(ret<0){
+						recv_fail_count++;	
+					}else{
+						recv_fail_count=0;
+						TRACE("2 allLen=%d. recvLen=%d. ret=%d...\n",allLen,recvLen,ret);
+						recvLen+=ret;
+					}
+					if(recv_fail_count>10){
+						closesocket(mPtr->sock_cli);
+						TRACE("playerThread exit. \n"); 
+						return -1;
+					}
+				}
+				
+				allLen = ((mPtr->recv_buf[2]<<24)&0xFF000000)+((mPtr->recv_buf[3]<<16)&0xFF0000)+((mPtr->recv_buf[4]<<8)&0xFF00)+mPtr->recv_buf[5];
+				//TRACE("allLen=%d. sokcet=%d.\n",allLen,mPtr->sock_cli);
+				while (recvLen<(allLen+4)){
+					int ret = recv(mPtr->sock_cli, mPtr->recv_buf+recvLen, (allLen+4-recvLen), 0);
+					TRACE("3 allLen=%d. recvLen=%d. ret=%d\n",allLen,recvLen,ret);
+					if(ret<0){
+						recv_fail_count++;	
+					}else{
+						recv_fail_count=0;
+						TRACE("4 allLen=%d. recvLen=%d. ret=%d\n",allLen,recvLen,ret);
+						recvLen+=ret;
+					}
+					if(recv_fail_count>10){
+						closesocket(mPtr->sock_cli);
+						TRACE("playerThread exit. \n"); 
+						return -1;
+					}
+				}
+			}
 		}
-	}			
+	}	
+
+	fclose(saveFile);
 		
-	//fclose(saveFile);
 	for(int n = 0;i<OUT_BUF_MAX;i++){
 		while(waveOutUnprepareHeader(mPtr->hWaveOut,&mPtr->WaveOutHdr[i],sizeof(WAVEHDR)) == WAVERR_STILLPLAYING){
 			TRACE("waveOutUnprepareHeader WAVERR_STILLPLAYING. \n"); 

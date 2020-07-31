@@ -26,7 +26,7 @@ private:
 	char send_buf[5016];
 	
 	static const int PCM_IN_RATE = 8000;  //话筒采样率
-	static const int OUT_BUF_MAX = 8;
+	static const int OUT_BUF_MAX = 10;
 	static const int OUT_BUF_SIZE = 4096;
 	char *outBuf[OUT_BUF_SIZE];
 
