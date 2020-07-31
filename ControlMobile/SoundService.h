@@ -22,8 +22,8 @@ private:
 private:
 	static const int mPort = 18183;	
 
-	char *recv_buf;
-	char *send_buf;
+	char recv_buf[5016];
+	char send_buf[5016];
 	
 	static const int PCM_IN_RATE = 8000;  //话筒采样率
 	static const int OUT_BUF_MAX = 8;
@@ -48,7 +48,6 @@ private:
 	int send_count;
 	int is_stop;
 	int is_speak;
-	int recv_fail_count;
 
 	FILE *inFile;
 
