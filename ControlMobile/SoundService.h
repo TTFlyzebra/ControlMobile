@@ -25,12 +25,12 @@ private:
 	char recv_buf[10240];
 	char send_buf[10240];
 	
-	static const int PCM_IN_RATE = 8000;  //话筒采样率
+	static const int PCM_OUT_RATE = 16000;  //播放采样率 
 	static const int OUT_BUF_MAX = 10;
-	static const int OUT_BUF_SIZE = 4096;
+	static const int OUT_BUF_SIZE = 5120;
 	char *outBuf[OUT_BUF_SIZE];
-
-	static const int PCM_OUT_RATE = 44100;  //播放采样率 
+	
+	static const int PCM_IN_RATE = 8000;  //话筒采样率
 	static const int IN_BUF_MAX = 2;
 	static const int IN_BUF_SIZE = 320;	
 	char *inBuf[IN_BUF_SIZE];
@@ -50,6 +50,9 @@ private:
 	int is_speak;
 
 	//FILE *inFile;
+	FILE *saveFile;
+	char *savePath;
+	bool is_save_file;
 
 public:
 	HANDLE m_socketThread;  

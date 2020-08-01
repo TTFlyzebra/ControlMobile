@@ -8,6 +8,8 @@ SoundService::SoundService(void)
 {
 	is_stop = 1;
 	is_speak = 0;
+	is_save_file = false;
+	savePath = "D:\\res\\music\\flyrecord.pcm";
 
 	for(int i=0;i<OUT_BUF_MAX;i++){
 		outBuf[i] = new char[OUT_BUF_SIZE];
@@ -89,6 +91,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 	MMRESULT     result; 
 	//PlaySound("D:\\res\\music\\HHG.wav"), NULL, SND_FILENAME | SND_ASYNC);	
 	result = waveOutOpen(&mPtr->hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT); 
+
 	if (result) 
 	{ 
 	    TRACE("Failed to open waveform output device."); 
@@ -96,7 +99,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 	}
 	int recv_fail_count = 0;
 	//int j = 0;
-	//FILE *saveFile = fopen("D:\\res\\music\\record2s16k.pcm","wb");
+	if(mPtr->is_save_file) mPtr->saveFile = fopen(mPtr->savePath,"wb");
 	while (mPtr->is_stop == 0)	{
 		memset(mPtr->recv_buf,0,5016);
 		int recvLen = recv(mPtr->sock_cli, mPtr->recv_buf, 5016, 0);		
@@ -147,7 +150,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 				int dataLen = ((mPtr->recv_buf[10]<<24)&0xFF000000)+((mPtr->recv_buf[11]<<16)&0xFF0000)+((mPtr->recv_buf[12]<<8)&0xFF00)+mPtr->recv_buf[13];
 				//TRACE("recv play data, dataLen=%d\n",dataLen);
 				memcpy(mPtr->outBuf[i],mPtr->recv_buf+14,dataLen);
-				//fwrite(mPtr->outBuf[i],1,dataLen,saveFile);
+				if(mPtr->is_save_file) fwrite(mPtr->outBuf[i],1,dataLen,mPtr->saveFile);
 				mPtr->WaveOutHdr[i].lpData = mPtr->outBuf[i];
 				mPtr->WaveOutHdr[i].dwBufferLength = dataLen;
 				mPtr->WaveOutHdr[i].dwUser = 0L;
@@ -240,7 +243,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 		}
 	}	
 
-	//fclose(saveFile);
+	if(mPtr->is_save_file) fclose(mPtr->saveFile);
 		
 	for(int n = 0;i<OUT_BUF_MAX;i++){
 		while(waveOutUnprepareHeader(mPtr->hWaveOut,&mPtr->WaveOutHdr[i],sizeof(WAVEHDR)) == WAVERR_STILLPLAYING){
