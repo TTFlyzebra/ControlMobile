@@ -16,7 +16,7 @@ public:
 	void playFile(void);	
 private:
 	static DWORD CALLBACK socketThread(LPVOID); 
-	static DWORD CALLBACK playerThread(LPVOID);
+	static DWORD CALLBACK recvThread(LPVOID);
 	static DWORD CALLBACK recordThread(LPVOID); 
 	static DWORD CALLBACK MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD dwInstance,DWORD dwParam1,DWORD dwParam2);
 private:
@@ -49,14 +49,17 @@ private:
 	int is_stop;
 	int is_speak;
 
-	//FILE *inFile;
-	FILE *saveFile;
-	char *savePath;
-	bool is_save_file;
+	FILE *saveRecordFile;
+	char *saveRecordPath;
+	bool is_save_record;
+
+	FILE *savePlayFile;
+	char *savePlayPath;
+	bool is_save_play;
 
 public:
 	HANDLE m_socketThread;  
-	HANDLE m_playerThread;  
+	HANDLE m_recvThread;  
 	HANDLE m_recordThread;  
 };
 

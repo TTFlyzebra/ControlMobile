@@ -1,8 +1,7 @@
 ipch/
 *.sdf
 ControlMobile/ControlMobile.aps
+ControlMobile/ControlMobile/Debug/
+ControlMobile/ControlMobile/Release/
 ControlMobile.opensdf
 ControlMobile.v11.suo
-ControlMobile/Debug/
-Debug/
-

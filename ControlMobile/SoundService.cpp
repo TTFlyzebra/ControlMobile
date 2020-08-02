@@ -6,10 +6,16 @@
 
 SoundService::SoundService(void)
 {
+	//初始化WSA
+	WORD sockVersion = MAKEWORD(2, 2);
+	WSADATA wsaData;
+	if (WSAStartup(sockVersion, &wsaData) != 0)
+	{
+		TRACE("WSAStartup error !");
+	}
+
 	is_stop = 1;
 	is_speak = 0;
-	is_save_file = false;
-	savePath = "D:\\res\\music\\flyrecord.pcm";
 
 	for(int i=0;i<OUT_BUF_MAX;i++){
 		outBuf[i] = new char[OUT_BUF_SIZE];
@@ -18,14 +24,11 @@ SoundService::SoundService(void)
 		inBuf[i] = new char[IN_BUF_SIZE];
 	}
 
+	is_save_play = false;
+	savePlayPath = "D:\\res\\music\\flyplay.pcm";
 
-	//初始化WSA
-	WORD sockVersion = MAKEWORD(2, 2);
-	WSADATA wsaData;
-	if (WSAStartup(sockVersion, &wsaData) != 0)
-	{
-		TRACE("WSAStartup error !");
-	}
+	is_save_record = false;
+	saveRecordPath = "D:\\res\\music\\flyrecord.pcm";
 
 	pOutFormat.wFormatTag=WAVE_FORMAT_PCM;	//simple,uncompressed format 
 	pOutFormat.nChannels = 2;//1=mono, 2=stereo 
@@ -48,48 +51,77 @@ SoundService::SoundService(void)
 SoundService::~SoundService(void)
 {	
 	for(int i=0;i<OUT_BUF_MAX;i++){
-		delete [] outBuf[OUT_BUF_SIZE];
+		delete [] outBuf[i];
 	}
-	for(int i=0;i<IN_BUF_MAX;i++){
-		delete [] inBuf[IN_BUF_SIZE];
+	for(int j=0;j<IN_BUF_MAX;j++){
+		delete [] inBuf[j];
 	}
+
+	//delete savePlayPath;
+	//delete saveRecordPath;
 
 	WSACleanup();//释放资源的操作
 	TRACE("~SoundService");
 }
 
+DWORD CALLBACK SoundService::socketThread(LPVOID lp)
+{
+	TRACE("socketThread start. \n");
+	SoundService *mPtr=(SoundService *)lp;
+	struct sockaddr_in sin;
+	struct sockaddr_in remoteAddr;	
 
-void SoundService::startPlay(void)
-{	
-	if(is_stop != 0){
-		is_stop = 0;
-		send_count = 0;
-		m_playerThread = CreateThread(NULL, 0, &SoundService::socketThread, this, CREATE_SUSPENDED, NULL);  
-		if (NULL!= m_playerThread) {  
-		     ResumeThread(m_playerThread);  
-		}
+	mPtr->sock_lis = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (mPtr->sock_lis == INVALID_SOCKET)
+	{
+		TRACE("socket error !");
+		return -1;
+	} 		
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(mPort);
+	sin.sin_addr.S_un.S_addr = INADDR_ANY;
+	if (bind(mPtr->sock_lis, (LPSOCKADDR)&sin, sizeof(sin)) == SOCKET_ERROR)
+	{
+		TRACE("bind error !");
+		return -1;
 	}
+	if (listen(mPtr->sock_lis, 5) == SOCKET_ERROR)
+	{
+		TRACE("listen error !");
+		return -1;
+	}	
+	int nAddrlen = sizeof(remoteAddr);
+	while (mPtr->is_stop == 0)
+	{
+		TRACE("accept client connect, socke_cli=%d.\n",mPtr->sock_cli);
+		mPtr->sock_cli = accept(mPtr->sock_lis, (SOCKADDR *)&remoteAddr, &nAddrlen);
+		TRACE("accept socke_cli=%d.\n",mPtr->sock_cli);
+		if(mPtr->sock_cli != INVALID_SOCKET){
+			if(mPtr->m_recvThread != NULL){
+				mPtr->m_recvThread = CreateThread(NULL, 0, &SoundService::recvThread, lp, CREATE_SUSPENDED, NULL);  
+				if (NULL!= mPtr->m_recvThread) {  
+				     ResumeThread(mPtr->m_recvThread);  
+				}			
+			}
+			//if(mPtr->m_recordThread!=NULL){
+			//	mPtr->m_recordThread = CreateThread(NULL, 0, &SoundService::recordThread, lp, CREATE_SUSPENDED, NULL);  
+			//	if (NULL!= mPtr->m_recordThread) {  
+			//	     ResumeThread(mPtr->m_recordThread);  
+			//	}
+			//}
+		}
+	}	
+	TRACE("socketThread exit. \n"); 
+	return 0;
 }
 
-void SoundService::stopPlay(void)
+DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 {	
-	is_stop = 1;	
-	//hWaveIn = NULL;
-	waveInStop(hWaveIn);
-	waveInReset(hWaveIn);
-	waveInClose(hWaveIn);
-	closesocket(sock_cli);
-	closesocket(sock_lis);	
-}
-
-DWORD CALLBACK SoundService::playerThread(LPVOID lp)
-{	
-	TRACE("playerThread start. \n"); 
+	TRACE("recvThread start. \n"); 
 	SoundService *mPtr=(SoundService *)lp;
 	int recvLen = 0;
 	int i = 0;
 	MMRESULT     result; 
-	//PlaySound("D:\\res\\music\\HHG.wav"), NULL, SND_FILENAME | SND_ASYNC);	
 	result = waveOutOpen(&mPtr->hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT); 
 
 	if (result) 
@@ -98,14 +130,13 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 		return -1;
 	}
 	int recv_fail_count = 0;
-	//int j = 0;
-	if(mPtr->is_save_file) mPtr->saveFile = fopen(mPtr->savePath,"wb");
+	if(mPtr->is_save_play) mPtr->savePlayFile = fopen(mPtr->savePlayPath,"wb");
 	while (mPtr->is_stop == 0)	{
 		memset(mPtr->recv_buf,0,5016);
 		int recvLen = recv(mPtr->sock_cli, mPtr->recv_buf, 5016, 0);		
 		if(recv_fail_count>10){
 			closesocket(mPtr->sock_cli);
-			TRACE("playerThread exit. \n"); 
+			TRACE("recvThread exit. \n"); 
 			return -1;
 		}
         if(recvLen < 6 ) {
@@ -132,14 +163,19 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 			}
 			if(recv_fail_count>10){
 				closesocket(mPtr->sock_cli);
-				TRACE("playerThread exit. \n"); 
+				TRACE("recvThread exit. \n"); 
 				return -1;
 			}
 		}
 
 		while(recvLen>=6){
 			if((mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4a)) {
-				//TRACE("recv start play.\n");	
+				int sample_rate = ((mPtr->recv_buf[10]<<8)&0xFF00)+(byte)mPtr->recv_buf[11];
+				TRACE("recv start play, sample_rate=%d\n",sample_rate);	
+				mPtr->pOutFormat.nSamplesPerSec = sample_rate; 
+				waveOutReset(mPtr->hWaveOut);
+				waveOutClose(mPtr->hWaveOut);
+				waveOutOpen(&mPtr->hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT);
 				int len = sizeof(PC_START_PLAY);
 				if(recvLen-len>0){
 					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
@@ -150,7 +186,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 				int dataLen = ((mPtr->recv_buf[10]<<24)&0xFF000000)+((mPtr->recv_buf[11]<<16)&0xFF0000)+((mPtr->recv_buf[12]<<8)&0xFF00)+mPtr->recv_buf[13];
 				//TRACE("recv play data, dataLen=%d\n",dataLen);
 				memcpy(mPtr->outBuf[i],mPtr->recv_buf+14,dataLen);
-				if(mPtr->is_save_file) fwrite(mPtr->outBuf[i],1,dataLen,mPtr->saveFile);
+				if(mPtr->is_save_play) fwrite(mPtr->outBuf[i],1,dataLen,mPtr->savePlayFile);
 				mPtr->WaveOutHdr[i].lpData = mPtr->outBuf[i];
 				mPtr->WaveOutHdr[i].dwBufferLength = dataLen;
 				mPtr->WaveOutHdr[i].dwUser = 0L;
@@ -175,6 +211,10 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 				//TODO:
 			}else if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4d)) {
 				TRACE("recv stop play.\n");	
+				mPtr->pOutFormat.nSamplesPerSec = PCM_OUT_RATE; 
+				waveOutReset(mPtr->hWaveOut);
+				waveOutClose(mPtr->hWaveOut);
+				waveOutOpen(&mPtr->hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT);
 				int len = sizeof(PC_STOP_PLAY);
 				if(recvLen-len>0){
 					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
@@ -216,7 +256,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 					}
 					if(recv_fail_count>10){
 						closesocket(mPtr->sock_cli);
-						TRACE("playerThread exit. \n"); 
+						TRACE("recvThread exit. \n"); 
 						return -1;
 					}
 				}
@@ -235,7 +275,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 					}
 					if(recv_fail_count>10){
 						closesocket(mPtr->sock_cli);
-						TRACE("playerThread exit. \n"); 
+						TRACE("recvThread exit. \n"); 
 						return -1;
 					}
 				}
@@ -243,7 +283,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 		}
 	}	
 
-	if(mPtr->is_save_file) fclose(mPtr->saveFile);
+	if(mPtr->is_save_play) fclose(mPtr->savePlayFile);
 		
 	for(int n = 0;i<OUT_BUF_MAX;i++){
 		while(waveOutUnprepareHeader(mPtr->hWaveOut,&mPtr->WaveOutHdr[i],sizeof(WAVEHDR)) == WAVERR_STILLPLAYING){
@@ -255,7 +295,7 @@ DWORD CALLBACK SoundService::playerThread(LPVOID lp)
 	waveOutReset(mPtr->hWaveOut);
     waveOutClose(mPtr->hWaveOut);
     mPtr->hWaveOut = NULL;	
-	TRACE("playerThread exit. \n"); 
+	TRACE("recvThread exit. \n"); 
 	return 0;
 }
 
@@ -307,7 +347,7 @@ DWORD SoundService::MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD lp,DWORD dw1,DWO
 			memcpy(mPtr->send_buf+14,pWaveInHdr->lpData,IN_BUF_SIZE);
 			memcpy(mPtr->send_buf+14+IN_BUF_SIZE,PC_SPEAK_DATA+14,2);
 			int sendLen=send(mPtr->sock_cli, mPtr->send_buf, IN_BUF_SIZE+16, 0);
-			//fwrite(pWaveInHdr->lpData,1,IN_BUF_SIZE,mPtr->inFile);
+			if(mPtr->is_save_record) fwrite(pWaveInHdr->lpData,1,IN_BUF_SIZE,mPtr->saveRecordFile);
 			TRACE("send sendLen=%d, number=%d, sokcet=%d.\n",sendLen,mPtr->send_count,mPtr->sock_cli);
 			mPtr->send_count++;
 			waveInAddBuffer(hWaveIn, pWaveInHdr, sizeof(WAVEHDR) );
@@ -325,9 +365,35 @@ DWORD SoundService::MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD lp,DWORD dw1,DWO
 	return 0;
 }
 
+
+void SoundService::startPlay(void)
+{	
+	if(is_stop != 0){
+		is_stop = 0;
+		send_count = 0;
+		m_recvThread = CreateThread(NULL, 0, &SoundService::socketThread, this, CREATE_SUSPENDED, NULL);  
+		if (NULL!= m_recvThread) {  
+		     ResumeThread(m_recvThread);  
+		}
+	}
+}
+
+void SoundService::stopPlay(void)
+{	
+	if(is_stop == 0 ){
+		is_stop = 1;
+		closesocket(sock_cli);
+		closesocket(sock_lis);		
+		waveInStop(hWaveIn);
+		waveInReset(hWaveIn);
+		waveInClose(hWaveIn);
+		Sleep(1000);
+	}
+}
+
 void SoundService::startSpeak(void)
 {	
-	//inFile = fopen("D:\\res\\music\\temp.pcm","wb+");
+	if(is_save_record ) saveRecordFile = fopen(saveRecordPath,"wb+");
 	is_speak = 1;
 	TRACE("recordThread start. \n"); 
 	MMRESULT     result; 
@@ -355,12 +421,11 @@ void SoundService::startSpeak(void)
 	}
 }
 
-char b[8];
 void SoundService::stopSpeak(void)
 {	
-	//fclose(inFile);
 	if(is_speak == 1){
 		is_speak = 0;
+		if(is_save_record) fclose(saveRecordFile);
 		waveInStop(hWaveIn);
 		waveInReset(hWaveIn);
 		waveInClose(hWaveIn);
@@ -368,56 +433,7 @@ void SoundService::stopSpeak(void)
 }
 
 
-DWORD CALLBACK SoundService::socketThread(LPVOID lp)
-{
-	TRACE("socketThread start. \n");
-	SoundService *mPtr=(SoundService *)lp;
-	struct sockaddr_in sin;
-	struct sockaddr_in remoteAddr;	
 
-	mPtr->sock_lis = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (mPtr->sock_lis == INVALID_SOCKET)
-	{
-		TRACE("socket error !");
-		return -1;
-	} 		
-	sin.sin_family = AF_INET;
-	sin.sin_port = htons(mPort);
-	sin.sin_addr.S_un.S_addr = INADDR_ANY;
-	if (bind(mPtr->sock_lis, (LPSOCKADDR)&sin, sizeof(sin)) == SOCKET_ERROR)
-	{
-		TRACE("bind error !");
-		return -1;
-	}
-	if (listen(mPtr->sock_lis, 5) == SOCKET_ERROR)
-	{
-		TRACE("listen error !");
-		return -1;
-	}	
-	int nAddrlen = sizeof(remoteAddr);
-	while (mPtr->is_stop == 0)
-	{
-		TRACE("accept client connect, socke_cli=%d.\n",mPtr->sock_cli);
-		mPtr->sock_cli = accept(mPtr->sock_lis, (SOCKADDR *)&remoteAddr, &nAddrlen);
-		TRACE("accept socke_cli=%d.\n",mPtr->sock_cli);
-		if(mPtr->sock_cli != INVALID_SOCKET){
-			if(mPtr->m_playerThread != NULL){
-				mPtr->m_playerThread = CreateThread(NULL, 0, &SoundService::playerThread, lp, CREATE_SUSPENDED, NULL);  
-				if (NULL!= mPtr->m_playerThread) {  
-				     ResumeThread(mPtr->m_playerThread);  
-				}			
-			}
-			//if(mPtr->m_recordThread!=NULL){
-			//	mPtr->m_recordThread = CreateThread(NULL, 0, &SoundService::recordThread, lp, CREATE_SUSPENDED, NULL);  
-			//	if (NULL!= mPtr->m_recordThread) {  
-			//	     ResumeThread(mPtr->m_recordThread);  
-			//	}
-			//}
-		}
-	}	
-	TRACE("socketThread exit. \n"); 
-	return 0;
-}
 
 void SoundService::playFile(void)
 {
