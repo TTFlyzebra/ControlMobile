@@ -37,6 +37,7 @@ SoundService::SoundService(void)
 	pOutFormat.wBitsPerSample = 16;	//16 for high quality, 8 for telephone-grade 
 	pOutFormat.nBlockAlign = 2 * 16 / 8; // = n.Channels * wBitsPerSample/8 
 	pOutFormat.cbSize=0; 
+	play_sample_rate = PCM_OUT_RATE;
 	
 	pInFormat.wFormatTag = WAVE_FORMAT_PCM;	//simple,uncompressed format 
 	pInFormat.nChannels = 1;//1=mono, 2=stereo 
@@ -170,12 +171,15 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 
 		while(recvLen>=6){
 			if((mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4a)) {
-				int sample_rate = ((mPtr->recv_buf[10]<<8)&0xFF00)+(byte)mPtr->recv_buf[11];
+				int sample_rate = ((mPtr->recv_buf[14]<<8)&0xFF00)+(byte)mPtr->recv_buf[15];
 				TRACE("recv start play, sample_rate=%d\n",sample_rate);	
-				mPtr->pOutFormat.nSamplesPerSec = sample_rate; 
-				waveOutReset(mPtr->hWaveOut);
-				waveOutClose(mPtr->hWaveOut);
-				waveOutOpen(&mPtr->hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT);
+				if(mPtr->play_sample_rate!=sample_rate){
+					mPtr->pOutFormat.nSamplesPerSec = sample_rate; 
+					waveOutReset(mPtr->hWaveOut);
+					waveOutClose(mPtr->hWaveOut);
+					waveOutOpen(&mPtr->hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT);
+					mPtr->play_sample_rate = sample_rate;
+				}
 				int len = sizeof(PC_START_PLAY);
 				if(recvLen-len>0){
 					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
@@ -183,9 +187,9 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 				recvLen-=len;
 				//TODO:
 			}else if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4b)) {
-				int dataLen = ((mPtr->recv_buf[10]<<24)&0xFF000000)+((mPtr->recv_buf[11]<<16)&0xFF0000)+((mPtr->recv_buf[12]<<8)&0xFF00)+mPtr->recv_buf[13];
+				int dataLen = ((mPtr->recv_buf[14]<<24)&0xFF000000)+((mPtr->recv_buf[15]<<16)&0xFF0000)+((mPtr->recv_buf[16]<<8)&0xFF00)+mPtr->recv_buf[17];
 				//TRACE("recv play data, dataLen=%d\n",dataLen);
-				memcpy(mPtr->outBuf[i],mPtr->recv_buf+14,dataLen);
+				memcpy(mPtr->outBuf[i],mPtr->recv_buf+18,dataLen);
 				if(mPtr->is_save_play) fwrite(mPtr->outBuf[i],1,dataLen,mPtr->savePlayFile);
 				mPtr->WaveOutHdr[i].lpData = mPtr->outBuf[i];
 				mPtr->WaveOutHdr[i].dwBufferLength = dataLen;
@@ -211,10 +215,13 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 				//TODO:
 			}else if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)&&(mPtr->recv_buf[8]==(char)0x04)&&(mPtr->recv_buf[9]==(char)0x4d)) {
 				TRACE("recv stop play.\n");	
-				mPtr->pOutFormat.nSamplesPerSec = PCM_OUT_RATE; 
-				waveOutReset(mPtr->hWaveOut);
-				waveOutClose(mPtr->hWaveOut);
-				waveOutOpen(&mPtr->hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT);
+				if(mPtr->play_sample_rate!=PCM_OUT_RATE){
+					mPtr->pOutFormat.nSamplesPerSec = PCM_OUT_RATE; 
+					waveOutReset(mPtr->hWaveOut);
+					waveOutClose(mPtr->hWaveOut);
+					waveOutOpen(&mPtr->hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT);
+					mPtr->play_sample_rate = PCM_OUT_RATE;
+				}
 				int len = sizeof(PC_STOP_PLAY);
 				if(recvLen-len>0){
 					memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
@@ -291,7 +298,6 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 			Sleep(500);
 		}
 	}
-	Sleep(500);
 	waveOutReset(mPtr->hWaveOut);
     waveOutClose(mPtr->hWaveOut);
     mPtr->hWaveOut = NULL;	
@@ -343,10 +349,10 @@ DWORD SoundService::MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD lp,DWORD dw1,DWO
 		break;
 	case MM_WIM_DATA:
 		if(mPtr->is_stop==0 && mPtr->is_speak == 1) {
-			memcpy(mPtr->send_buf,PC_SPEAK_DATA,14);
-			memcpy(mPtr->send_buf+14,pWaveInHdr->lpData,IN_BUF_SIZE);
-			memcpy(mPtr->send_buf+14+IN_BUF_SIZE,PC_SPEAK_DATA+14,2);
-			int sendLen=send(mPtr->sock_cli, mPtr->send_buf, IN_BUF_SIZE+16, 0);
+			memcpy(mPtr->send_buf,PC_SPEAK_DATA,sizeof(PC_SPEAK_DATA)-2);
+			memcpy(mPtr->send_buf+(sizeof(PC_SPEAK_DATA)-2),pWaveInHdr->lpData,IN_BUF_SIZE);
+			memcpy(mPtr->send_buf+(sizeof(PC_SPEAK_DATA)-2+IN_BUF_SIZE),PC_SPEAK_DATA+(sizeof(PC_SPEAK_DATA)-2),2);
+			int sendLen=send(mPtr->sock_cli, mPtr->send_buf, IN_BUF_SIZE+20, 0);
 			if(mPtr->is_save_record) fwrite(pWaveInHdr->lpData,1,IN_BUF_SIZE,mPtr->saveRecordFile);
 			TRACE("send sendLen=%d, number=%d, sokcet=%d.\n",sendLen,mPtr->send_count,mPtr->sock_cli);
 			mPtr->send_count++;

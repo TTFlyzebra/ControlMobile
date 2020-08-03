@@ -25,6 +25,7 @@ private:
 	char recv_buf[10240];
 	char send_buf[10240];
 	
+	int play_sample_rate;  //播放采样率 
 	static const int PCM_OUT_RATE = 16000;  //播放采样率 
 	static const int OUT_BUF_MAX = 10;
 	static const int OUT_BUF_SIZE = 5120;
