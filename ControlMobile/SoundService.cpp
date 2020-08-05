@@ -133,25 +133,27 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 	int recv_fail_count = 0;
 	if(mPtr->is_save_play) mPtr->savePlayFile = fopen(mPtr->savePlayPath,"wb");
 	while (mPtr->is_stop == 0)	{
-		memset(mPtr->recv_buf,0,5016);
+		memset(mPtr->recv_buf,0,10240);
 		int recvLen = recv(mPtr->sock_cli, mPtr->recv_buf, 5016, 0);		
 		if(recv_fail_count>10){
 			closesocket(mPtr->sock_cli);
-			TRACE("recvThread exit. \n"); 
+			TRACE("recvThread exit 1. \n"); 
 			return -1;
 		}
         if(recvLen < 6 ) {
 			if(recvLen<0){
 				recv_fail_count++;	
 			}
-			break;
+			TRACE("recv error recvLen=%d. \n",recvLen); 
+			continue;
 		}
 		recv_fail_count=0;
 		long allLen = 0;
 		if((mPtr->recv_buf[0]==(char)0x7e)&&(mPtr->recv_buf[1]==(char)0xa5)){
 			allLen = ((mPtr->recv_buf[2]<<24)&0xFF000000)+((mPtr->recv_buf[3]<<16)&0xFF0000)+((mPtr->recv_buf[4]<<8)&0xFF00)+mPtr->recv_buf[5];
 		}else{
-			break;
+			TRACE("recv error head=%02X%02X. \n",mPtr->recv_buf[0],mPtr->recv_buf[0]); 
+			continue;
 		}
 		//TRACE("allLen=%d. sokcet=%d.\n",allLen,mPtr->sock_cli);
 		while (recvLen<(allLen+4)){
@@ -164,7 +166,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 			}
 			if(recv_fail_count>10){
 				closesocket(mPtr->sock_cli);
-				TRACE("recvThread exit. \n"); 
+				TRACE("recvThread exit 2. \n"); 
 				return -1;
 			}
 		}
@@ -255,34 +257,34 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 					int ret = recv(mPtr->sock_cli, mPtr->recv_buf+recvLen, (6-recvLen), 0);
 					TRACE("1 allLen=%d. recvLen=%d. ret=%d\n",allLen,recvLen,ret);
 					if(ret<0){
+						TRACE("recv failed 1 ret=%d. \n",ret); 
 						recv_fail_count++;	
 					}else{
 						recv_fail_count=0;
-						TRACE("2 allLen=%d. recvLen=%d. ret=%d...\n",allLen,recvLen,ret);
 						recvLen+=ret;
 					}
 					if(recv_fail_count>10){
 						closesocket(mPtr->sock_cli);
-						TRACE("recvThread exit. \n"); 
+						TRACE("recvThread exit 3. \n"); 
 						return -1;
 					}
 				}
 				
 				allLen = ((mPtr->recv_buf[2]<<24)&0xFF000000)+((mPtr->recv_buf[3]<<16)&0xFF0000)+((mPtr->recv_buf[4]<<8)&0xFF00)+mPtr->recv_buf[5];
-				//TRACE("allLen=%d. sokcet=%d.\n",allLen,mPtr->sock_cli);
+				TRACE("allLen=%d. sokcet=%d.\n",allLen,mPtr->sock_cli);
 				while (recvLen<(allLen+4)){
 					int ret = recv(mPtr->sock_cli, mPtr->recv_buf+recvLen, (allLen+4-recvLen), 0);
 					TRACE("3 allLen=%d. recvLen=%d. ret=%d\n",allLen,recvLen,ret);
 					if(ret<0){
+						TRACE("recv failed ret=%d. 2 \n",ret); 
 						recv_fail_count++;	
 					}else{
 						recv_fail_count=0;
-						TRACE("4 allLen=%d. recvLen=%d. ret=%d\n",allLen,recvLen,ret);
 						recvLen+=ret;
 					}
 					if(recv_fail_count>10){
 						closesocket(mPtr->sock_cli);
-						TRACE("recvThread exit. \n"); 
+						TRACE("recvThread exit 4. \n"); 
 						return -1;
 					}
 				}
