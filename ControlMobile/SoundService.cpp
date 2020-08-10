@@ -135,19 +135,20 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 	while (mPtr->is_stop == 0)	{
 		memset(mPtr->recv_buf,0,10240);
 		int recvLen = recv(mPtr->sock_cli, mPtr->recv_buf, 10240, 0);
-        if(recvLen < 6 ) {
-			if(recvLen<0){
-				recv_fail_count++;	
-			}
-			TRACE("recv error recvLen=%d, errno=%d. \n",recvLen, errno); 
-			continue;
-		}
 
 		if(recv_fail_count>10){
 			closesocket(mPtr->sock_cli);
 			TRACE("recvThread exit 1. \n"); 
 			return -1;
 		}
+
+        if(recvLen < 6 ) {
+			if(recvLen<=0){
+				recv_fail_count++;	
+			}
+			TRACE("recv error recvLen=%d, errno=%d. \n",recvLen, errno); 
+			continue;
+		}	
 
 		recv_fail_count=0;
 		long allLen = 0;
