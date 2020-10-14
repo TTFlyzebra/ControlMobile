@@ -3,6 +3,7 @@
 //
 #include "resource.h"
 #include "SoundService.h"
+#include "VideoService.h"
 
 #pragma once
 
@@ -36,6 +37,7 @@ public:
 	afx_msg void OnBnClickedCancel();
 private:
 	SoundService *mSoundService;
+	VideoService *mVideoService;
 public:
 	afx_msg void OnBnClickedCloseSound();
 	afx_msg void OnBnClickedCheck1();

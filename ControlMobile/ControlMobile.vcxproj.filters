@@ -39,7 +39,7 @@
     <ClInclude Include="protocol.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="FlyBuffer.h">
+    <ClInclude Include="VideoService.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -56,7 +56,7 @@
     <ClCompile Include="SoundService.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="FlyBuffer.cpp">
+    <ClCompile Include="VideoService.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

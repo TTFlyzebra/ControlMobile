@@ -43,9 +43,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>D:\C++PRO\ControlMobile\ffmpeg\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\C++PRO\ControlMobile\ffmpeg\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>D:\C++PRO\ControlMobile\ffmpeg\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\C++PRO\ControlMobile\ffmpeg\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -58,6 +62,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;postproc.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -101,7 +106,6 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FlyBuffer.h" />
     <ClInclude Include="protocol.h" />
     <ClInclude Include="ControlMobile.h" />
     <ClInclude Include="ControlMobileDlg.h" />
@@ -109,16 +113,17 @@
     <ClInclude Include="SoundService.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="VideoService.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ControlMobile.cpp" />
     <ClCompile Include="ControlMobileDlg.cpp" />
-    <ClCompile Include="FlyBuffer.cpp" />
     <ClCompile Include="SoundService.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="VideoService.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ControlMobile.rc" />
