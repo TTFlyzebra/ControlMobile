@@ -43,8 +43,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\C++PRO\ControlMobile\ffmpeg\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\C++PRO\ControlMobile\ffmpeg\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\C++PRO\ControlMobile\SDL2-2.0.12\include;D:\C++PRO\ControlMobile\ffmpeg\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\C++PRO\ControlMobile\SDL2-2.0.12\lib;D:\C++PRO\ControlMobile\ffmpeg\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -62,7 +62,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;postproc.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;postproc.lib;swresample.lib;swscale.lib;SDL2.lib;SDL2main.lib;SDL2test.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -110,6 +111,7 @@
     <ClInclude Include="ControlMobile.h" />
     <ClInclude Include="ControlMobileDlg.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="SDLWindow.h" />
     <ClInclude Include="SoundService.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -118,6 +120,7 @@
   <ItemGroup>
     <ClCompile Include="ControlMobile.cpp" />
     <ClCompile Include="ControlMobileDlg.cpp" />
+    <ClCompile Include="SDLWindow.cpp" />
     <ClCompile Include="SoundService.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

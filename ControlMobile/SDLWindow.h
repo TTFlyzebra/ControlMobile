@@ -1,0 +1,22 @@
+#include "SDL.h"
+#pragma once
+class SDLWindow
+{
+public:
+	SDLWindow(void);
+	~SDLWindow(void);
+	void create(CWnd *pCwnd);
+	void destory();
+	void upData(u_char *yuv);
+
+private:
+	SDL_Window * pWindow;
+	SDL_Texture * pTexture;
+	SDL_Rect sdlRT;
+	SDL_Rect dstRT;
+	int iPitch;
+	SDL_Renderer * pRender;
+	SDL_RendererInfo info;
+	CWnd *mPtr;
+};
+

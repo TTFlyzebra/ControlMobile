@@ -4,6 +4,7 @@
 #include "resource.h"
 #include "SoundService.h"
 #include "VideoService.h"
+#include "SDLWindow.h"
 
 #pragma once
 
@@ -38,6 +39,7 @@ public:
 private:
 	SoundService *mSoundService;
 	VideoService *mVideoService;
+	SDLWindow *mSDLWindow;
 public:
 	afx_msg void OnBnClickedCloseSound();
 	afx_msg void OnBnClickedCheck1();

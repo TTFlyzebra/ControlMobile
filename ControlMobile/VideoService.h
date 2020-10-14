@@ -4,12 +4,14 @@ extern "C" {
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 };
+#include "SDLWindow.h"
 #pragma once
 class VideoService
 {
 public:
-	VideoService(void);
+	VideoService();
 	~VideoService(void);
+	void initDisplayWindow(CWnd *pCwnd);
 	DWORD run();
 private:
     u_char *sps;
@@ -28,7 +30,10 @@ private:
     uint16_t out_channelConfig;
     uint16_t out_audioFormat;
 
-	static DWORD CALLBACK runThread(LPVOID); 
+	static DWORD CALLBACK runThread(LPVOID);
+
+	SDLWindow *mSDLWindow;
+	CWnd *pCwnd;
 public:
 	HANDLE m_ffmpeg;  
 

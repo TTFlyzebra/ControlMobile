@@ -42,6 +42,9 @@
     <ClInclude Include="VideoService.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="SDLWindow.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ControlMobile.cpp">
@@ -57,6 +60,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="VideoService.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SDLWindow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
