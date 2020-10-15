@@ -12,43 +12,37 @@ SDLWindow::~SDLWindow(void)
 {
 }
 
-void SDLWindow::create(CWnd *pCwnd)
+void SDLWindow::init(CWnd *pCwnd, int width, int height)
 {
-	SDL_Init(SDL_INIT_VIDEO);
-	if (SDL_WasInit(SDL_INIT_VIDEO) != 0) {
+	TRACE("SDLWindow create, width=%d, height=%d\n",width,height);
+	if (SDL_Init(SDL_INIT_VIDEO)) {
 		TRACE("Video is initialized.\n");
 	} else {
 		TRACE("Video is not initialized.\n");
-	}
-	TRACE("SDLWindow create\n");
+	}	
     //用mfc窗口句柄创建一个sdl window
     pWindow = SDL_CreateWindowFrom((void *)(pCwnd->GetDlgItem(IDC_VIDEO)->GetSafeHwnd())); 
 	TRACE( "SDL_CreateWindowFrom %s\n", SDL_GetError()); 
-    sdlRT.h = 720;
-    sdlRT.w = 1280;
+  
+    sdlRT.w = width;
+	sdlRT.h = height;
     sdlRT.x = 0;
     sdlRT.y = 0; 
-
-    dstRT.h = 1280;
-    dstRT.w = 720;
-    dstRT.x = 0;
-    dstRT.y = 0;
- 
-    int iW = 1280;
-    int iH = 720;
-
-   
+  
+  
     //计算yuv一行数据占的字节数
-    iPitch = iW*SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_YV12);   
  
     int iWidth = 0;
     int iHeight = 0;
-    SDL_GetWindowSize( pWindow, &iWidth, &iHeight );
-    dstRT.h = iHeight;
+    SDL_GetWindowSize( pWindow, &iWidth, &iHeight );   
     dstRT.w = iWidth;
+	dstRT.h = iHeight;
+    dstRT.x = 0;
+    dstRT.y = 0;
+	TRACE("SDL_GetWindowSize, width=%d, height=%d\n",iWidth,iHeight);
  
     //获取当前可用画图驱动 window中有3个，第一个为d3d，第二个为opengl，第三个为software
-    int iii = SDL_GetNumRenderDrivers();
+    //int iii = SDL_GetNumRenderDrivers();
     //创建渲染器，第二个参数为选用的画图驱动，0代表d3d
     pRender = SDL_CreateRenderer( pWindow, 0, SDL_RENDERER_ACCELERATED );
     TRACE( "SDL_CreateRenderer %s\n", SDL_GetError()); 
@@ -64,12 +58,12 @@ void SDLWindow::create(CWnd *pCwnd)
     TRACE( "SDL_GetRendererInfo %s\n", SDL_GetError());
  
     //创建纹理
-    pTexture = SDL_CreateTexture( pRender,SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, iW, iH );   
+	pTexture = SDL_CreateTexture( pRender,SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, width, height );   
 	TRACE("SDLWindow create finish\n");
  
 }
 
-void SDLWindow::destory()
+void SDLWindow::release()
 {
 	if ( pTexture != NULL )
     {
@@ -93,12 +87,12 @@ void SDLWindow::destory()
 }
 
 
-void SDLWindow::upData(u_char *yuv)
+void SDLWindow::upVideoYUV(u_char *yuv,int width,int height)
 {
-	//int ret = SDL_UpdateTexture( pTexture, &sdlRT, yuv, iPitch );
-	//TRACE("SDL_UpdateTexture ret=%d.\n",ret);
-	int e = SDL_UpdateYUVTexture(pTexture,  NULL,	yuv, 1280,	yuv + 1280*720, 1280 / 2, yuv + 1280*720 +1280*720/4, 1280 / 2);
+	int ret = SDL_UpdateTexture( pTexture, NULL, yuv, width );
+	TRACE("upVideoYUV widht=%d, height=%d.\n",width, height);
+	//int e = SDL_UpdateYUVTexture(pTexture,  NULL, yuv, width,	yuv + width*height, width / 2, yuv + width*height +width*height/4, width / 2);
     SDL_RenderClear( pRender );
-    SDL_RenderCopy( pRender, pTexture, &sdlRT, &dstRT );
+    SDL_RenderCopy( pRender, pTexture, NULL,NULL);
     SDL_RenderPresent( pRender );
 }

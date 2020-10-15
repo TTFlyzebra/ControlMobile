@@ -1,24 +1,26 @@
 #include "stdafx.h"
 #include "VideoService.h"
+extern "C" {
+#include "libavutil/imgutils.h"
+}
 
 
 VideoService::VideoService(void)
 {
-	
+
 	TRACE("VideoService\n");
 	isStop = false;
-	m_ffmpeg = CreateThread(NULL, 0, &VideoService::runThread, this, CREATE_SUSPENDED, NULL);  
+	m_ffmpeg = CreateThread(NULL, 0, &VideoService::runThread, this, CREATE_SUSPENDED, NULL);
+	mSDLWindow = nullptr;
 	if (NULL!= m_ffmpeg) {  
 		ResumeThread(m_ffmpeg);  
 	}
-	mSDLWindow = new SDLWindow();
 }
 
 
 VideoService::~VideoService(void)
 {
 	isStop = false;
-	mSDLWindow->destory();
 	TRACE("~VideoService\n");
 }
 
@@ -33,17 +35,23 @@ DWORD CALLBACK VideoService::runThread(LPVOID lp)
 	TRACE("runThread\n");
 	VideoService *mPtr = (VideoService *)lp;
 	mPtr->isStop = false;
-	return mPtr->run();
+	while(mPtr->isStop==false)
+	{
+		mPtr->run();
+		Sleep(40);
+		TRACE("runThread...............\n");
+	}
+	return 0;
 }
 
 DWORD VideoService::run()
 {
 	TRACE("run\n");
-	mSDLWindow->create(pCwnd);
 	av_register_all();
 	avformat_network_init();
 	pFormatCtx = avformat_alloc_context();
-	int ret = avformat_open_input(&pFormatCtx, "http://192.168.1.87/video/hyrz.mp4", nullptr, nullptr);
+	int ret = avformat_open_input(&pFormatCtx, "rtmp://192.168.8.30/live/test2", nullptr, nullptr);
+	//int ret = avformat_open_input(&pFormatCtx, "d:\\temp\\test.mp4", nullptr, nullptr);
 	if (ret != 0) {
 		TRACE("Couldn't open file (ret:%d)\n", ret);
 		return -1;
@@ -58,11 +66,11 @@ DWORD VideoService::run()
 	int videoStream = -1;
 	int audioStream = -1;
 	for (int i = 0; i < pFormatCtx->nb_streams; i++) {
-        if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            videoStream = i;
-            break;
-        }
-    }
+		if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+			videoStream = i;
+			break;
+		}
+	}
 
 	if (videoStream == -1) {
 		TRACE("no find vedio_stream\n");
@@ -85,6 +93,10 @@ DWORD VideoService::run()
 		TRACE("Could not open decodec.\n");
 		return -1;
 	}
+	if(mSDLWindow==nullptr){
+		mSDLWindow = new SDLWindow();		
+	}
+	mSDLWindow->init(pCwnd,pCodecCtx_video->width,pCodecCtx_video->height);	
 
 	//音频使用软解，初始化音频解码，音频不是必须存在
 	for (int i = 0; i < pFormatCtx->nb_streams; i++) {
@@ -127,8 +139,35 @@ DWORD VideoService::run()
 			break;
 		}
 	}
-	frame = av_frame_alloc();
+	frame = av_frame_alloc();	
 	packet = (AVPacket *) av_malloc(sizeof(AVPacket)); //分配一个packet
+
+	int buf_size;
+	uint8_t *buffer;
+	static struct SwsContext *sws_ctx;
+	fly_frame = av_frame_alloc();
+	buf_size = av_image_get_buffer_size(AV_PIX_FMT_YUV420P,pCodecCtx_video->width,pCodecCtx_video->height,1);
+	buffer = (uint8_t *)av_malloc(buf_size);
+	av_image_fill_arrays(fly_frame->data,           // dst data[]
+		fly_frame->linesize,       // dst linesize[]
+		buffer,                    // src buffer
+		AV_PIX_FMT_YUV420P,        // pixel format
+		pCodecCtx_video->width,        // width
+		pCodecCtx_video->height,       // height
+		1                          // align
+		);
+	sws_ctx = sws_getContext(pCodecCtx_video->width,    // src width
+		pCodecCtx_video->height,   // src height
+		pCodecCtx_video->pix_fmt,  // src format
+		pCodecCtx_video->width,    // dst width
+		pCodecCtx_video->height,   // dst height
+		AV_PIX_FMT_YUV420P,    // dst format
+		SWS_BICUBIC,           // flags
+		NULL,                  // src filter
+		NULL,                  // dst filter
+		NULL                   // param
+		);          
+
 	while (!isStop && av_read_frame(pFormatCtx, packet) >= 0) {
 		if (packet->stream_index == videoStream) {
 			//软解视频
@@ -138,15 +177,35 @@ DWORD VideoService::run()
 				ret = avcodec_receive_frame(pCodecCtx_video, frame);
 				if (ret >= 0) {
 					//TRACE("frame->width=%d,frame->height=%d\n",frame->width,frame->height);
-					auto * video_buf = (u_char *) malloc((frame->width*frame->height* 3 / 2) * sizeof(u_char));
+					//auto * video_buf = (u_char *) malloc((frame->width*frame->height* 3 / 2) * sizeof(u_char));
+					//int start = 0;
+					//memcpy(video_buf,frame->data[0],frame->width*frame->height);
+					//start=start+frame->width*frame->height;
+					//memcpy(video_buf + start,frame->data[1],frame->width*frame->height/4);
+					//start=start+frame->width*frame->height/4;
+					//memcpy(video_buf + start,frame->data[2],frame->width*frame->height/4);
+					//mSDLWindow->upVideoYUV(video_buf,frame->width,frame->height);					
+					//free(video_buf);
+					sws_scale(sws_ctx,                                  // sws context
+						(const uint8_t *const *)frame->data,  // src slice
+						frame->linesize,                      // src stride
+						0,                                        // src slice y
+						pCodecCtx_video->height,                      // src slice height
+						fly_frame->data,                          // dst planes
+						fly_frame->linesize                       // dst strides
+						);
+					fly_frame->width = frame->width;
+					fly_frame->height = frame->height;
+					auto * video_buf = (u_char *) malloc((fly_frame->width*fly_frame->height* 3 / 2) * sizeof(u_char));
 					int start = 0;
-                    memcpy(video_buf,frame->data[0],frame->width*frame->height);
-                    start=start+frame->width*frame->height;
-                    memcpy(video_buf + start,frame->data[1],frame->width*frame->height/4);
-                    start=start+frame->width*frame->height/4;
-                    memcpy(video_buf + start,frame->data[2],frame->width*frame->height/4);
-					mSDLWindow->upData(video_buf);					
+					memcpy(video_buf,fly_frame->data[0],fly_frame->width*fly_frame->height);
+					start=start+fly_frame->width*fly_frame->height;
+					memcpy(video_buf + start,fly_frame->data[1],fly_frame->width*fly_frame->height/4);
+					start=start+fly_frame->width*fly_frame->height/4;
+					memcpy(video_buf + start,fly_frame->data[2],fly_frame->width*fly_frame->height/4);
+					mSDLWindow->upVideoYUV(video_buf,fly_frame->width,fly_frame->height);					
 					free(video_buf);
+
 				}
 			}
 		} else if (packet->stream_index == audioStream) {
@@ -176,15 +235,17 @@ DWORD VideoService::run()
 	if (!isStop) {
 		//callBack->javaOnStop();
 	}
-	free(sps);
-	free(pps);
-	swr_free(&swr_cxt);
+
 	av_free(audio_buf);
 	av_free(packet);
 	av_frame_free(&frame);
 	avcodec_close(pCodecCtx_video);
 	avcodec_close(pCodecCtx_audio);
 	avformat_close_input(&pFormatCtx);
-	mSDLWindow->destory();
+	if(isStop){
+		mSDLWindow->release();
+		delete mSDLWindow;
+		mSDLWindow = nullptr;
+	}
 	return 0;
 }

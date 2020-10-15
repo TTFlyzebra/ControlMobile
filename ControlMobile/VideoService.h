@@ -21,6 +21,7 @@ private:
     AVCodecContext *pCodecCtx_audio;
     AVPacket *packet;
     AVFrame *frame;
+	AVFrame *fly_frame;
     struct SwrContext* swr_cxt;
     u_char *audio_buf;
     bool isRun;

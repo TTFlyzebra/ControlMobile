@@ -5,9 +5,9 @@ class SDLWindow
 public:
 	SDLWindow(void);
 	~SDLWindow(void);
-	void create(CWnd *pCwnd);
-	void destory();
-	void upData(u_char *yuv);
+	void init(CWnd *pCwnd, int width, int height);
+	void release();
+	void upVideoYUV(u_char *yuv, int width, int height);
 
 private:
 	SDL_Window * pWindow;

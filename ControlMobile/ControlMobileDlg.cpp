@@ -106,6 +106,9 @@ BOOL CControlMobileDlg::OnInitDialog()
 	mSoundService = new SoundService();
 	mVideoService = new VideoService();
 	mVideoService->initDisplayWindow(this);
+
+	mSoundService->startPlay();	
+
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
