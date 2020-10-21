@@ -10,10 +10,10 @@ VideoService::VideoService(void)
 
 	TRACE("VideoService\n");
 	isStop = false;
-	m_ffmpeg = CreateThread(NULL, 0, &VideoService::runThread, this, CREATE_SUSPENDED, NULL);
+	pid_ffplay = CreateThread(NULL, 0, &VideoService::ffplayThread, this, CREATE_SUSPENDED, NULL);
 	mSDLWindow = nullptr;
-	if (NULL!= m_ffmpeg) {  
-		ResumeThread(m_ffmpeg);  
+	if (NULL!= pid_ffplay) {  
+		ResumeThread(pid_ffplay);  
 	}
 }
 
@@ -30,27 +30,27 @@ void VideoService::initDisplayWindow(CWnd *p)
 }
 
 
-DWORD CALLBACK VideoService::runThread(LPVOID lp)
+DWORD CALLBACK VideoService::ffplayThread(LPVOID lp)
 {
 	TRACE("runThread\n");
 	VideoService *mPtr = (VideoService *)lp;
 	mPtr->isStop = false;
 	while(mPtr->isStop==false)
 	{
-		mPtr->run();
+		mPtr->ffplay();
 		Sleep(40);
 		TRACE("runThread...............\n");
 	}
 	return 0;
 }
 
-DWORD VideoService::run()
+DWORD VideoService::ffplay()
 {
 	TRACE("run\n");
 	av_register_all();
 	avformat_network_init();
 	pFormatCtx = avformat_alloc_context();
-	int ret = avformat_open_input(&pFormatCtx, "rtmp://192.168.8.30/live/test2", nullptr, nullptr);
+	int ret = avformat_open_input(&pFormatCtx, "rtmp://192.168.8.244/live/test2", nullptr, nullptr);
 	//int ret = avformat_open_input(&pFormatCtx, "d:\\temp\\test.mp4", nullptr, nullptr);
 	if (ret != 0) {
 		TRACE("Couldn't open file (ret:%d)\n", ret);
@@ -205,7 +205,6 @@ DWORD VideoService::run()
 					memcpy(video_buf + start,fly_frame->data[2],fly_frame->width*fly_frame->height/4);
 					mSDLWindow->upVideoYUV(video_buf,fly_frame->width,fly_frame->height);					
 					free(video_buf);
-
 				}
 			}
 		} else if (packet->stream_index == audioStream) {
@@ -247,5 +246,25 @@ DWORD VideoService::run()
 		delete mSDLWindow;
 		mSDLWindow = nullptr;
 	}
+	return 0;
+}
+
+
+DWORD CALLBACK VideoService::sdlplayThread(LPVOID lp)
+{
+	TRACE("runThread\n");
+	VideoService *mPtr = (VideoService *)lp;
+	mPtr->isStop = false;
+	while(mPtr->isStop==false)
+	{
+		mPtr->sdlplay();
+		Sleep(40);
+		TRACE("runThread...............\n");
+	}
+	return 0;
+}
+
+DWORD VideoService::sdlplay()
+{
 	return 0;
 }

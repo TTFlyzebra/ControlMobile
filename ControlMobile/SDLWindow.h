@@ -7,6 +7,7 @@ public:
 	~SDLWindow(void);
 	void init(CWnd *pCwnd, int width, int height);
 	void release();
+	void pushYUV(u_char *yuv, int width, int height);
 	void upVideoYUV(u_char *yuv, int width, int height);
 
 private:

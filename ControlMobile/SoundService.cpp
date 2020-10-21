@@ -153,7 +153,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 		recv_fail_count=0;
 		long allLen = 0;
 		if(((byte)mPtr->recv_buf[0]==0x7e)&&((byte)mPtr->recv_buf[1]==0xa5)){
-			allLen = (((byte)mPtr->recv_buf[2]<<24)&0xFF000000)+(((byte)mPtr->recv_buf[3]<<16)&0xFF0000)+(((byte)mPtr->recv_buf[4]<<8)&0xFF00)+(byte)mPtr->recv_buf[5];	
+			allLen = (((byte)mPtr->recv_buf[2]<<24)&0xFF000000)+(((byte)mPtr->recv_buf[3]<<16)&0x00FF0000)+(((byte)mPtr->recv_buf[4]<<8)&0x0000FF00)+((byte)mPtr->recv_buf[5]&0x000000FF);	
 			//TRACE("recv allLen=%d, len=%X%X. \n",allLen, mPtr->recv_buf[4]&0xFF,mPtr->recv_buf[5]&0xFF); 
 		}else{
 			TRACE("recv error recvLen=%d, head=%X,%X. \n",recvLen, mPtr->recv_buf[0]&0xFF,mPtr->recv_buf[1]&0xFF); 

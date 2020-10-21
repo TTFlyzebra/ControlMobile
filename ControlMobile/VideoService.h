@@ -6,13 +6,19 @@ extern "C" {
 };
 #include "SDLWindow.h"
 #pragma once
+
+struct videoBuffer
+{
+	char *yuvData[1280*720*3/2];
+	int size;
+};
+
 class VideoService
 {
 public:
 	VideoService();
 	~VideoService(void);
 	void initDisplayWindow(CWnd *pCwnd);
-	DWORD run();
 private:
     u_char *sps;
     u_char *pps;
@@ -31,12 +37,17 @@ private:
     uint16_t out_channelConfig;
     uint16_t out_audioFormat;
 
-	static DWORD CALLBACK runThread(LPVOID);
+	HANDLE pid_ffplay;  
+	static DWORD CALLBACK ffplayThread(LPVOID);
+	DWORD ffplay();
+
+	HANDLE pid_sdlplay;  
+	static DWORD CALLBACK sdlplayThread(LPVOID);
+	DWORD sdlplay();
 
 	SDLWindow *mSDLWindow;
 	CWnd *pCwnd;
-public:
-	HANDLE m_ffmpeg;  
+	
 
 };
 

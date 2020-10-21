@@ -86,11 +86,14 @@ void SDLWindow::release()
 
 }
 
+void SDLWindow::pushYUV(u_char *yuv,int width,int height)
+{
+
+}
 
 void SDLWindow::upVideoYUV(u_char *yuv,int width,int height)
 {
 	int ret = SDL_UpdateTexture( pTexture, NULL, yuv, width );
-	TRACE("upVideoYUV widht=%d, height=%d.\n",width, height);
 	//int e = SDL_UpdateYUVTexture(pTexture,  NULL, yuv, width,	yuv + width*height, width / 2, yuv + width*height +width*height/4, width / 2);
     SDL_RenderClear( pRender );
     SDL_RenderCopy( pRender, pTexture, NULL,NULL);
