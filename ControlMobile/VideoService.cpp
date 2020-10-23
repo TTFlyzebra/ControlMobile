@@ -46,11 +46,12 @@ DWORD CALLBACK VideoService::ffplayThread(LPVOID lp)
 
 DWORD VideoService::ffplay()
 {
-	TRACE("run\n");
+	TRACE("ffplay run\n");
 	av_register_all();
 	avformat_network_init();
-	pFormatCtx = avformat_alloc_context();
-	int ret = avformat_open_input(&pFormatCtx, "rtmp://192.168.8.244/live/test2", nullptr, nullptr);
+	pFormatCtx = avformat_alloc_context();	
+	int ret = avformat_open_input(&pFormatCtx, "rtmp://192.168.8.244/live/screen", nullptr, nullptr);
+	pFormatCtx->flags |=AVFMT_FLAG_NOBUFFER;
 	//int ret = avformat_open_input(&pFormatCtx, "d:\\temp\\test.mp4", nullptr, nullptr);
 	if (ret != 0) {
 		TRACE("Couldn't open file (ret:%d)\n", ret);
@@ -59,6 +60,8 @@ DWORD VideoService::ffplay()
 	int totalSec = static_cast<int>(pFormatCtx->duration / AV_TIME_BASE);
 	TRACE("video time  %dmin:%dsec\n", totalSec / 60, totalSec % 60);
 
+	pFormatCtx->probesize = 100 *1024;
+    pFormatCtx->max_analyze_duration = 5 * AV_TIME_BASE;
 	if (avformat_find_stream_info(pFormatCtx, nullptr) < 0) {
 		TRACE("Could't find stream infomation\n");
 		return -1;
@@ -84,6 +87,7 @@ DWORD VideoService::ffplay()
 		return -1;
 	}
 	pCodecCtx_video = avcodec_alloc_context3(pCodec_video);
+	pCodecCtx_video->flags |=CODEC_FLAG_LOW_DELAY;
 	ret = avcodec_parameters_to_context(pCodecCtx_video, pCodecPar_video);
 	if (ret < 0) {
 		TRACE("avcodec_parameters_to_context() failed %d\n", ret);
@@ -97,6 +101,8 @@ DWORD VideoService::ffplay()
 		mSDLWindow = new SDLWindow();		
 	}
 	mSDLWindow->init(pCwnd,pCodecCtx_video->width,pCodecCtx_video->height);	
+
+	pCodecCtx_video->flags |=CODEC_FLAG_LOW_DELAY;
 
 	//音频使用软解，初始化音频解码，音频不是必须存在
 	for (int i = 0; i < pFormatCtx->nb_streams; i++) {
@@ -203,8 +209,8 @@ DWORD VideoService::ffplay()
 					memcpy(video_buf + start,fly_frame->data[1],fly_frame->width*fly_frame->height/4);
 					start=start+fly_frame->width*fly_frame->height/4;
 					memcpy(video_buf + start,fly_frame->data[2],fly_frame->width*fly_frame->height/4);
-					mSDLWindow->upVideoYUV(video_buf,fly_frame->width,fly_frame->height);					
-					free(video_buf);
+					mSDLWindow->pushYUV(video_buf);					
+					//free(video_buf);
 				}
 			}
 		} else if (packet->stream_index == audioStream) {

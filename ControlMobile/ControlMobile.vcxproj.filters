@@ -72,11 +72,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\ControlMobile.rc2">
-      <Filter>资源文件</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="res\ControlMobile.ico">
       <Filter>资源文件</Filter>
     </Image>

@@ -132,9 +132,6 @@
     <ResourceCompile Include="ControlMobile.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\ControlMobile.rc2" />
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="res\ControlMobile.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
