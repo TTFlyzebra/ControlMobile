@@ -26,8 +26,6 @@ void SDLWindow::init(CWnd *pCwnd, int width, int height)
 	this->pCwnd = pCwnd;
 	this->width = width;
 	this->height = height;
-
-		TRACE("start \n");
 	if (SDL_Init(SDL_INIT_VIDEO)) {
 		TRACE("Video is initialized.\n");
 	} else {
@@ -96,10 +94,10 @@ DWORD SDLWindow::start()
 	while (SDL_WaitEvent(&event)) {
 		switch (event.type) {
 		case EVENT_STOP:
-			TRACE("SDLWindow stop");
+			TRACE("SDLWindow stop\n");
 			return 0;
 		case SDL_QUIT:
-			TRACE("User requested to quit");
+			TRACE("SDL_WaitEvent SDL_QUIT\n");
 			return 0;
 		case SDL_WINDOWEVENT:
 			break;
@@ -128,9 +126,11 @@ DWORD SDLWindow::start()
 
 void SDLWindow::pushYUV(u_char *yuv)
 {	
-	EnterCriticalSection(&lock);
-	yuvList.push(yuv);
-	LeaveCriticalSection(&lock);	
+	if(!isStop){
+		EnterCriticalSection(&lock);
+		yuvList.push(yuv);
+		LeaveCriticalSection(&lock);	
+	}
 }
 
 DWORD CALLBACK SDLWindow::playThread(LPVOID lp)
@@ -166,9 +166,6 @@ DWORD SDLWindow::playYUV()
 		if(size<8 && sleepTime>0 && sleepTime<(1000/24)){
 			//TRACE("sleepTime = %d\n",sleepTime);
 			Sleep(sleepTime);
-			EnterCriticalSection(&lock);
-			int size = yuvList.size();
-			LeaveCriticalSection(&lock); 
 		}
 	}
 	return 0;
@@ -181,6 +178,13 @@ void SDLWindow::release()
 	SDL_Event stop_event;
 	stop_event.type = EVENT_STOP;
     SDL_PushEvent(&stop_event);
+	EnterCriticalSection(&lock);
+	while(!yuvList.empty()){
+		u_char *yuv = yuvList.front();
+		free(yuv);
+		yuvList.pop();
+	}
+	LeaveCriticalSection(&lock); 
 
 	if ( pTexture != NULL )
 	{
@@ -193,12 +197,11 @@ void SDLWindow::release()
 		SDL_DestroyRenderer( pRender );
 		pRender = NULL;
 	}
-
-
-	if ( NULL != pWindow )
-	{
-		SDL_DestroyWindow( pWindow );
-		pWindow = NULL;
-	}
-
-}
+	
+	//TODO:´Ë´¦»á×èÈû
+	//if ( NULL != pWindow )
+	//{
+	//	SDL_DestroyWindow( pWindow );
+	//	pWindow = NULL;
+	//}
+}	

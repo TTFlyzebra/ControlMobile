@@ -7,9 +7,21 @@ extern "C" {
 
 VideoService::VideoService(void)
 {
+	isStop = true;
+	isRun = false;
+	TRACE("VideoService\n");	
+}
 
-	TRACE("VideoService\n");
-	isStop = false;
+
+VideoService::~VideoService(void)
+{
+	TRACE("~VideoService\n");
+}
+
+void VideoService::start(CWnd *p)
+{
+	pCwnd = p;
+	isStop = false;	
 	pid_ffplay = CreateThread(NULL, 0, &VideoService::ffplayThread, this, CREATE_SUSPENDED, NULL);
 	mSDLWindow = nullptr;
 	if (NULL!= pid_ffplay) {  
@@ -18,35 +30,24 @@ VideoService::VideoService(void)
 }
 
 
-VideoService::~VideoService(void)
-{
-	isStop = false;
-	TRACE("~VideoService\n");
-}
-
-void VideoService::initDisplayWindow(CWnd *p)
-{
-	this->pCwnd = p;
-}
-
-
 DWORD CALLBACK VideoService::ffplayThread(LPVOID lp)
 {
-	TRACE("runThread\n");
-	VideoService *mPtr = (VideoService *)lp;
-	mPtr->isStop = false;
+	TRACE("ffplayThread start \n");	
+	VideoService *mPtr = (VideoService *)lp;	
+	mPtr->isRun = true;
 	while(mPtr->isStop==false)
 	{
 		mPtr->ffplay();
-		Sleep(40);
-		TRACE("runThread...............\n");
+		Sleep(40);		
 	}
+	mPtr->isRun = false;
+	TRACE("ffplayThread exit \n");	
 	return 0;
 }
 
 DWORD VideoService::ffplay()
 {
-	TRACE("ffplay run\n");
+	TRACE("ffplay start\n");
 	av_register_all();
 	avformat_network_init();
 	pFormatCtx = avformat_alloc_context();	
@@ -237,40 +238,27 @@ DWORD VideoService::ffplay()
 		}
 		av_packet_unref(packet);
 	}
-	if (!isStop) {
-		//callBack->javaOnStop();
-	}
 
-	av_free(audio_buf);
+//	av_free(audio_buf);
 	av_free(packet);
 	av_frame_free(&frame);
 	avcodec_close(pCodecCtx_video);
-	avcodec_close(pCodecCtx_audio);
+//	avcodec_close(pCodecCtx_audio);
 	avformat_close_input(&pFormatCtx);
 	if(isStop){
 		mSDLWindow->release();
 		delete mSDLWindow;
 		mSDLWindow = nullptr;
 	}
+	TRACE("ffplay stop\n");
 	return 0;
 }
 
-
-DWORD CALLBACK VideoService::sdlplayThread(LPVOID lp)
+void VideoService::stop()
 {
-	TRACE("runThread\n");
-	VideoService *mPtr = (VideoService *)lp;
-	mPtr->isStop = false;
-	while(mPtr->isStop==false)
-	{
-		mPtr->sdlplay();
+	isStop = true;
+	while (isRun){
 		Sleep(40);
-		TRACE("runThread...............\n");
 	}
-	return 0;
 }
 
-DWORD VideoService::sdlplay()
-{
-	return 0;
-}

@@ -105,7 +105,7 @@ BOOL CControlMobileDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 	mSoundService = new SoundService();
 	mVideoService = new VideoService();
-	mVideoService->initDisplayWindow(this);
+	mVideoService->start(this);
 
 	mSoundService->startPlay();	
 
@@ -177,6 +177,8 @@ void CControlMobileDlg::OnBnClickedCancel()
 	mSoundService->stopSpeak();	
 	mSoundService->stopPlay();	
 	delete mSoundService;
+	mVideoService->stop();
+	delete mVideoService;
 	CDialogEx::OnCancel();
 }
 

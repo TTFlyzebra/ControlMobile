@@ -18,7 +18,8 @@ class VideoService
 public:
 	VideoService();
 	~VideoService(void);
-	void initDisplayWindow(CWnd *pCwnd);
+	void start(CWnd *pCwnd);
+	void stop();
 private:
     u_char *sps;
     u_char *pps;
@@ -40,10 +41,6 @@ private:
 	HANDLE pid_ffplay;  
 	static DWORD CALLBACK ffplayThread(LPVOID);
 	DWORD ffplay();
-
-	HANDLE pid_sdlplay;  
-	static DWORD CALLBACK sdlplayThread(LPVOID);
-	DWORD sdlplay();
 
 	SDLWindow *mSDLWindow;
 	CWnd *pCwnd;

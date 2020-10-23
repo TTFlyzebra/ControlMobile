@@ -11,7 +11,7 @@ SoundService::SoundService(void)
 	WSADATA wsaData;
 	if (WSAStartup(sockVersion, &wsaData) != 0)
 	{
-		TRACE("WSAStartup error !");
+		TRACE("WSAStartup error !\n");
 	}
 
 	is_stop = 1;
@@ -62,7 +62,7 @@ SoundService::~SoundService(void)
 	//delete saveRecordPath;
 
 	WSACleanup();//释放资源的操作
-	TRACE("~SoundService");
+	TRACE("~SoundService\n");
 }
 
 DWORD CALLBACK SoundService::socketThread(LPVOID lp)
