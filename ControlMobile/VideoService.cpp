@@ -51,8 +51,7 @@ DWORD VideoService::ffplay()
 	av_register_all();
 	avformat_network_init();
 	pFormatCtx = avformat_alloc_context();	
-	int ret = avformat_open_input(&pFormatCtx, "rtmp://192.168.8.244/live/screen", nullptr, nullptr);
-	pFormatCtx->flags |=AVFMT_FLAG_NOBUFFER;
+	int ret = avformat_open_input(&pFormatCtx, "rtmp://192.168.1.88/live/screen", nullptr, nullptr);	
 	//int ret = avformat_open_input(&pFormatCtx, "d:\\temp\\test.mp4", nullptr, nullptr);
 	if (ret != 0) {
 		TRACE("Couldn't open file (ret:%d)\n", ret);
@@ -61,8 +60,6 @@ DWORD VideoService::ffplay()
 	int totalSec = static_cast<int>(pFormatCtx->duration / AV_TIME_BASE);
 	TRACE("video time  %dmin:%dsec\n", totalSec / 60, totalSec % 60);
 
-	pFormatCtx->probesize = 100 *1024;
-    pFormatCtx->max_analyze_duration = 5 * AV_TIME_BASE;
 	if (avformat_find_stream_info(pFormatCtx, nullptr) < 0) {
 		TRACE("Could't find stream infomation\n");
 		return -1;
@@ -88,7 +85,6 @@ DWORD VideoService::ffplay()
 		return -1;
 	}
 	pCodecCtx_video = avcodec_alloc_context3(pCodec_video);
-	pCodecCtx_video->flags |=CODEC_FLAG_LOW_DELAY;
 	ret = avcodec_parameters_to_context(pCodecCtx_video, pCodecPar_video);
 	if (ret < 0) {
 		TRACE("avcodec_parameters_to_context() failed %d\n", ret);

@@ -151,22 +151,27 @@ DWORD SDLWindow::playYUV()
 		u_char *yuv = yuvList.front();
 		yuvList.pop();
 		LeaveCriticalSection(&lock); 
+		DWORD curretTime = timeGetTime();
+		DWORD sleepTime = 1000/25 - (curretTime - lastTime);
+		//TRACE("curretTime=%d,lastTime=%d,sleepTime=%d\n",curretTime,lastTime,sleepTime);
+		lastTime = curretTime;		
+		if(size<8 && sleepTime>0 && sleepTime<(1000/24)){
+			//TRACE("sleep time=%d frame size = %d\n",sleepTime, size);
+			Sleep(sleepTime);
+		}else{
+			//TRACE("Don't sleep, frame size = %d\n",size);
+		}
+		if(isStop) {
+			free(yuv);
+			break;	
+		}
 		int ret = SDL_UpdateTexture( pTexture, NULL, yuv, width);
 		//int e = SDL_UpdateYUVTexture(pTexture,  NULL, yuv, width,	yuv + width*height, width / 2, yuv + width*height +width*height/4, width / 2);
 		SDL_RenderClear( pRender );
 		SDL_RenderCopy( pRender, pTexture, NULL,NULL);
-		SDL_RenderPresent( pRender );
-		
+		SDL_RenderPresent( pRender );		
 		free(yuv);
-
-		DWORD curretTime = timeGetTime();
-		DWORD sleepTime = 1000/25 - (curretTime - lastTime);
-		//TRACE("curretTime=%d,lastTime=%d,sleepTime=%d,size=%d\n",curretTime,lastTime,sleepTime,size);
-		lastTime = curretTime;		
-		if(size<8 && sleepTime>0 && sleepTime<(1000/24)){
-			//TRACE("sleepTime = %d\n",sleepTime);
-			Sleep(sleepTime);
-		}
+		
 	}
 	return 0;
 }
