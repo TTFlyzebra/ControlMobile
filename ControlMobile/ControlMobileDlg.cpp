@@ -103,11 +103,24 @@ BOOL CControlMobileDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+
+	//初始化WSA
+	WORD sockVersion = MAKEWORD(2, 2);
+	WSADATA wsaData;
+	if (WSAStartup(sockVersion, &wsaData) != 0)
+	{
+		TRACE("WSAStartup error !\n");
+	}
+
+	mController = new Controller();
 	mSoundService = new SoundService();
 	mVideoService = new VideoService();
-	mVideoService->start(this);
+	mSDLWindow = new SDLWindow();
 
+	mController->start();
+	mVideoService->start(mSDLWindow);
 	mSoundService->startPlay();	
+	mSDLWindow->createWindow(this);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -174,11 +187,18 @@ void CControlMobileDlg::OnBnClickedOk()
 void CControlMobileDlg::OnBnClickedCancel()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	mController->stop();
+	delete mController;
 	mSoundService->stopSpeak();	
 	mSoundService->stopPlay();	
 	delete mSoundService;
 	mVideoService->stop();
 	delete mVideoService;
+	mSDLWindow->destory();
+	delete mSDLWindow;
+
+	WSACleanup();//释放资源的操作
+
 	CDialogEx::OnCancel();
 }
 

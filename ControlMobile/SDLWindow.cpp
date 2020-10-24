@@ -11,6 +11,8 @@ SDLWindow::SDLWindow(void)
 {
 	lastTime = 0;
 	isStop = false;
+	pTexture = NULL;
+	pRender = NULL;
 	InitializeCriticalSection(&lock);
 }
 
@@ -20,12 +22,9 @@ SDLWindow::~SDLWindow(void)
 	DeleteCriticalSection(&lock);
 }
 
-void SDLWindow::init(CWnd *pCwnd, int width, int height)
-{
-	TRACE("SDLWindow create, width=%d, height=%d\n",width,height);
+void SDLWindow::createWindow(CWnd *pCwnd){
+	TRACE("SDLWindow bindWindow().\n");
 	this->pCwnd = pCwnd;
-	this->width = width;
-	this->height = height;
 	if (SDL_Init(SDL_INIT_VIDEO)) {
 		TRACE("Video is initialized.\n");
 	} else {
@@ -34,23 +33,6 @@ void SDLWindow::init(CWnd *pCwnd, int width, int height)
 	//用mfc窗口句柄创建一个sdl window
 	pWindow = SDL_CreateWindowFrom((void *)(pCwnd->GetDlgItem(IDC_VIDEO)->GetSafeHwnd())); 
 	TRACE( "SDL_CreateWindowFrom %s\n", SDL_GetError()); 
-
-	sdlRT.w = width;
-	sdlRT.h = height;
-	sdlRT.x = 0;
-	sdlRT.y = 0; 
-
-
-	//计算yuv一行数据占的字节数
-
-	int iWidth = 0;
-	int iHeight = 0;
-	SDL_GetWindowSize( pWindow, &iWidth, &iHeight );   
-	dstRT.w = iWidth;
-	dstRT.h = iHeight;
-	dstRT.x = 0;
-	dstRT.y = 0;
-	TRACE("SDL_GetWindowSize, width=%d, height=%d\n",iWidth,iHeight);
 
 	//获取当前可用画图驱动 window中有3个，第一个为d3d，第二个为opengl，第三个为software
 	//int iii = SDL_GetNumRenderDrivers();
@@ -64,17 +46,12 @@ void SDLWindow::init(CWnd *pCwnd, int width, int height)
 	SDL_GetRenderDriverInfo(1, &info);    //opgl
 	SDL_GetRenderDriverInfo(2, &info);    //software
 
-	char szInfo[256] = {0};
 	TRACE( "info.name = %s\n", info.name);
 	TRACE( "SDL_GetRendererInfo %s\n", SDL_GetError());
 
-	//创建纹理
-	pTexture = SDL_CreateTexture( pRender,SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, width, height );   
-	TRACE("SDLWindow create finish!\n");
-
-	pid_sdlkeyevent = CreateThread(NULL, 0, &SDLWindow::sdlKeyEvent, this, CREATE_SUSPENDED, NULL);
-	if (NULL!= pid_sdlkeyevent) {  
-		ResumeThread(pid_sdlkeyevent);  
+	pid_sdleventThread = CreateThread(NULL, 0, &SDLWindow::sdleventThread, this, CREATE_SUSPENDED, NULL);
+	if (NULL!= pid_sdleventThread) {  
+		ResumeThread(pid_sdleventThread);  
 	}
 	pid_playthread = CreateThread(NULL, 0, &SDLWindow::playThread, this, CREATE_SUSPENDED, NULL);
 	if (NULL!= pid_playthread) {  
@@ -82,13 +59,34 @@ void SDLWindow::init(CWnd *pCwnd, int width, int height)
 	}
 }
 
-DWORD CALLBACK SDLWindow::sdlKeyEvent(LPVOID lp)
-{
-	SDLWindow *mPtr = (SDLWindow *)lp;
-	return mPtr->start();
+void SDLWindow::init(int width, int height)
+{	
+	this->width = width;
+	this->height = height;	
+	sdlRT.w = width;
+	sdlRT.h = height;
+	sdlRT.x = 0;
+	sdlRT.y = 0; 
+	int iWidth = 0;
+	int iHeight = 0;
+	SDL_GetWindowSize( pWindow, &iWidth, &iHeight );   
+	TRACE("SDL_GetWindowSize, width=%d, height=%d\n",iWidth,iHeight);
+	dstRT.w = iWidth;
+	dstRT.h = iHeight;
+	dstRT.x = 0;
+	dstRT.y = 0;	
+	pTexture = SDL_CreateTexture( pRender,SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, width, height );   
+	TRACE("SDLWindow init finish!\n");
+
 }
 
-DWORD SDLWindow::start()
+DWORD CALLBACK SDLWindow::sdleventThread(LPVOID lp)
+{
+	SDLWindow *mPtr = (SDLWindow *)lp;
+	return mPtr->handSdlEvent();
+}
+
+DWORD SDLWindow::handSdlEvent()
 {
 	SDL_Event event;
 	while (SDL_WaitEvent(&event)) {
@@ -124,14 +122,6 @@ DWORD SDLWindow::start()
 	return 0;
 }
 
-void SDLWindow::pushYUV(u_char *yuv)
-{	
-	if(!isStop){
-		EnterCriticalSection(&lock);
-		yuvList.push(yuv);
-		LeaveCriticalSection(&lock);	
-	}
-}
 
 DWORD CALLBACK SDLWindow::playThread(LPVOID lp)
 {
@@ -176,8 +166,16 @@ DWORD SDLWindow::playYUV()
 	return 0;
 }
 
+void SDLWindow::pushYUV(u_char *yuv)
+{	
+	if(!isStop){
+		EnterCriticalSection(&lock);
+		yuvList.push(yuv);
+		LeaveCriticalSection(&lock);	
+	}
+}
 
-void SDLWindow::release()
+void SDLWindow::destory()
 {
 	isStop = true;
 	SDL_Event stop_event;

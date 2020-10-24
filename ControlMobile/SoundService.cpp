@@ -6,14 +6,6 @@
 
 SoundService::SoundService(void)
 {
-	//初始化WSA
-	WORD sockVersion = MAKEWORD(2, 2);
-	WSADATA wsaData;
-	if (WSAStartup(sockVersion, &wsaData) != 0)
-	{
-		TRACE("WSAStartup error !\n");
-	}
-
 	is_stop = 1;
 	is_speak = 0;
 
@@ -58,11 +50,19 @@ SoundService::~SoundService(void)
 		delete [] inBuf[j];
 	}
 
-	//delete savePlayPath;
-	//delete saveRecordPath;
-
-	WSACleanup();//释放资源的操作
 	TRACE("~SoundService\n");
+}
+
+void SoundService::startPlay(void)
+{	
+	if(is_stop != 0){
+		is_stop = 0;
+		send_count = 0;
+		m_recvThread = CreateThread(NULL, 0, &SoundService::socketThread, this, CREATE_SUSPENDED, NULL);  
+		if (NULL!= m_recvThread) {  
+		     ResumeThread(m_recvThread);  
+		}
+	}
 }
 
 DWORD CALLBACK SoundService::socketThread(LPVOID lp)
@@ -387,19 +387,6 @@ DWORD SoundService::MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD lp,DWORD dw1,DWO
 	}
 	//TRACE("MicCallBack exit.\n"); 
 	return 0;
-}
-
-
-void SoundService::startPlay(void)
-{	
-	if(is_stop != 0){
-		is_stop = 0;
-		send_count = 0;
-		m_recvThread = CreateThread(NULL, 0, &SoundService::socketThread, this, CREATE_SUSPENDED, NULL);  
-		if (NULL!= m_recvThread) {  
-		     ResumeThread(m_recvThread);  
-		}
-	}
 }
 
 void SoundService::stopPlay(void)

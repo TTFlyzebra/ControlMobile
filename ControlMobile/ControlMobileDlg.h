@@ -2,6 +2,7 @@
 // ControlMobileDlg.h : Í·ÎÄ¼þ
 //
 #include "resource.h"
+#include "Controller.h"
 #include "SoundService.h"
 #include "VideoService.h"
 #include "SDLWindow.h"
@@ -37,6 +38,7 @@ public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
 private:
+	Controller *mController;
 	SoundService *mSoundService;
 	VideoService *mVideoService;
 	SDLWindow *mSDLWindow;

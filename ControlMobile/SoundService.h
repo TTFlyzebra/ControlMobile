@@ -19,6 +19,10 @@ private:
 	static DWORD CALLBACK recvThread(LPVOID);
 	static DWORD CALLBACK recordThread(LPVOID); 
 	static DWORD CALLBACK MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD dwInstance,DWORD dwParam1,DWORD dwParam2);
+
+	HANDLE m_socketThread;  
+	HANDLE m_recvThread;  
+	HANDLE m_recordThread;  
 private:
 	static const int mPort = 18183;	
 
@@ -58,9 +62,5 @@ private:
 	char *savePlayPath;
 	bool is_save_play;
 
-public:
-	HANDLE m_socketThread;  
-	HANDLE m_recvThread;  
-	HANDLE m_recordThread;  
 };
 

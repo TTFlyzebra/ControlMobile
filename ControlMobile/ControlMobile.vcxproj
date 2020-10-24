@@ -107,6 +107,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Controller.h" />
     <ClInclude Include="protocol.h" />
     <ClInclude Include="ControlMobile.h" />
     <ClInclude Include="ControlMobileDlg.h" />
@@ -120,6 +121,7 @@
   <ItemGroup>
     <ClCompile Include="ControlMobile.cpp" />
     <ClCompile Include="ControlMobileDlg.cpp" />
+    <ClCompile Include="Controller.cpp" />
     <ClCompile Include="SDLWindow.cpp" />
     <ClCompile Include="SoundService.cpp" />
     <ClCompile Include="stdafx.cpp">

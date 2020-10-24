@@ -18,7 +18,7 @@ class VideoService
 public:
 	VideoService();
 	~VideoService(void);
-	void start(CWnd *pCwnd);
+	void start(SDLWindow *mSDLWindow);
 	void stop();
 private:
     u_char *sps;
@@ -43,8 +43,5 @@ private:
 	DWORD ffplay();
 
 	SDLWindow *mSDLWindow;
-	CWnd *pCwnd;
-	
-
 };
 

@@ -14,10 +14,10 @@ class SDLWindow
 public:
 	SDLWindow(void);
 	~SDLWindow(void);
-	void init(CWnd *pCwnd, int width, int height);
-	void release();
+	void createWindow(CWnd *pCwnd);
+	void init(int width, int height);	
 	void pushYUV(u_char *yuv);
-	void upVideoYUV();
+	void destory();
 
 private:
 	SDL_Window * pWindow;
@@ -32,9 +32,10 @@ private:
 	CWnd *pCwnd; 
 	int width; 
 	int height;
-	HANDLE pid_sdlkeyevent;  
-	static DWORD CALLBACK sdlKeyEvent(LPVOID);
-	DWORD SDLWindow::start();
+
+	HANDLE pid_sdleventThread;  
+	static DWORD CALLBACK sdleventThread(LPVOID);
+	DWORD SDLWindow::handSdlEvent();
 
 	HANDLE pid_playthread;  
 	static DWORD CALLBACK playThread(LPVOID);

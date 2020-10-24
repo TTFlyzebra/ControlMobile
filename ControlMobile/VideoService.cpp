@@ -18,12 +18,12 @@ VideoService::~VideoService(void)
 	TRACE("~VideoService\n");
 }
 
-void VideoService::start(CWnd *p)
+
+void VideoService::start(SDLWindow *mSDLWindow)
 {
-	pCwnd = p;
+	this->mSDLWindow = mSDLWindow;
 	isStop = false;	
 	pid_ffplay = CreateThread(NULL, 0, &VideoService::ffplayThread, this, CREATE_SUSPENDED, NULL);
-	mSDLWindow = nullptr;
 	if (NULL!= pid_ffplay) {  
 		ResumeThread(pid_ffplay);  
 	}
@@ -50,8 +50,8 @@ DWORD VideoService::ffplay()
 	TRACE("ffplay start\n");
 	av_register_all();
 	avformat_network_init();
-	pFormatCtx = avformat_alloc_context();	
-	int ret = avformat_open_input(&pFormatCtx, "rtmp://192.168.1.88/live/screen", nullptr, nullptr);	
+	pFormatCtx = avformat_alloc_context();		
+	int ret = avformat_open_input(&pFormatCtx, "rtmp://192.168.8.244/live/screen", nullptr, nullptr);	
 	//int ret = avformat_open_input(&pFormatCtx, "d:\\temp\\test.mp4", nullptr, nullptr);
 	if (ret != 0) {
 		TRACE("Couldn't open file (ret:%d)\n", ret);
@@ -94,11 +94,8 @@ DWORD VideoService::ffplay()
 		TRACE("Could not open decodec.\n");
 		return -1;
 	}
-	if(mSDLWindow==nullptr){
-		mSDLWindow = new SDLWindow();		
-	}
-	mSDLWindow->init(pCwnd,pCodecCtx_video->width,pCodecCtx_video->height);	
 
+	mSDLWindow->init(pCodecCtx_video->width,pCodecCtx_video->height);	
 	pCodecCtx_video->flags |=CODEC_FLAG_LOW_DELAY;
 
 	//音频使用软解，初始化音频解码，音频不是必须存在
@@ -241,11 +238,6 @@ DWORD VideoService::ffplay()
 	avcodec_close(pCodecCtx_video);
 //	avcodec_close(pCodecCtx_audio);
 	avformat_close_input(&pFormatCtx);
-	if(isStop){
-		mSDLWindow->release();
-		delete mSDLWindow;
-		mSDLWindow = nullptr;
-	}
 	TRACE("ffplay stop\n");
 	return 0;
 }
@@ -253,8 +245,9 @@ DWORD VideoService::ffplay()
 void VideoService::stop()
 {
 	isStop = true;
-	while (isRun){
-		Sleep(40);
-	}
+	//while (isRun){
+	//	TRACE("Can't stop VideoService, because is Running...\n");
+	//	Sleep(40);
+	//}
 }
 
