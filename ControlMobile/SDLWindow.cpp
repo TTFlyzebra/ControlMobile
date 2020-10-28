@@ -158,7 +158,7 @@ DWORD SDLWindow::playYUV()
 		int ret = SDL_UpdateTexture( pTexture, NULL, yuv, width);
 		//int e = SDL_UpdateYUVTexture(pTexture,  NULL, yuv, width,	yuv + width*height, width / 2, yuv + width*height +width*height/4, width / 2);
 		SDL_RenderClear( pRender );
-		SDL_RenderCopy( pRender, pTexture, NULL,NULL);
+		SDL_RenderCopy( pRender, pTexture, NULL, NULL);
 		SDL_RenderPresent( pRender );		
 		free(yuv);
 		

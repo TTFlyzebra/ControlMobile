@@ -107,6 +107,9 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\AndroidPro\scrcpy\app\src\android\keycodes.h" />
+    <ClInclude Include="android\input.h" />
+    <ClInclude Include="android\keycodes.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="protocol.h" />
     <ClInclude Include="ControlMobile.h" />
@@ -116,7 +119,9 @@
     <ClInclude Include="SoundService.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="util\buffer_util.h" />
     <ClInclude Include="VideoService.h" />
+    <ClInclude Include="screen.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ControlMobile.cpp" />

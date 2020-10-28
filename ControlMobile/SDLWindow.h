@@ -19,8 +19,7 @@ public:
 	void pushYUV(u_char *yuv);
 	void destory();
 
-private:
-	SDL_Window * pWindow;
+private:	
 	SDL_Texture * pTexture;
 	SDL_Rect sdlRT;
 	SDL_Rect dstRT;
@@ -46,5 +45,8 @@ private:
 	DWORD lastTime;
 
 	bool isStop;
+public:
+	SDL_Window * pWindow;
+	SDL_Rect rect;
 };
 

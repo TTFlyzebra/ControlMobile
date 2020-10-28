@@ -228,3 +228,40 @@ void CControlMobileDlg::OnBnClickedStopfile()
 	// TODO: 在此添加控件通知处理程序代码
 	mSoundService->stopSpeak();
 }
+
+
+BOOL CControlMobileDlg::PreTranslateMessage(MSG* pMsg)
+{
+	// TODO: 在此添加专用代码和/或调用基类
+
+	if(pMsg->message==WM_LBUTTONDOWN)
+	{
+		TRACE("WM_LBUTTONDOWN\n");
+	}
+
+	if(pMsg->message==WM_LBUTTONUP)
+	{
+		TRACE("WM_LBUTTONUP\n");
+	}
+	if(pMsg->message==WM_RBUTTONDOWN)
+	{
+		TRACE("WM_RBUTTONDOWN\n");
+	}
+
+	if(pMsg->message==WM_RBUTTONUP)
+	{
+		TRACE("WM_RBUTTONUP\n");
+	}
+	if(pMsg->message==WM_KEYUP)
+	{
+		TRACE("WM_KEYUP\n");
+	}
+
+	if(pMsg->message==WM_KEYDOWN)
+	{
+		TRACE("WM_KEYDOWN\n");
+	}
+
+
+	return CDialogEx::PreTranslateMessage(pMsg);
+}

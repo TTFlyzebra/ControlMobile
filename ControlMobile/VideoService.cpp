@@ -4,6 +4,9 @@ extern "C" {
 #include "libavutil/imgutils.h"
 }
 
+#define PLAY_URL "rtmp://192.168.8.244/live/screen"
+//#define PLAY_URL "d:\\temp\\test.mp4"
+
 
 VideoService::VideoService(void)
 {
@@ -51,10 +54,9 @@ DWORD VideoService::ffplay()
 	av_register_all();
 	avformat_network_init();
 	pFormatCtx = avformat_alloc_context();		
-	int ret = avformat_open_input(&pFormatCtx, "rtmp://192.168.8.244/live/screen", nullptr, nullptr);	
-	//int ret = avformat_open_input(&pFormatCtx, "d:\\temp\\test.mp4", nullptr, nullptr);
+	int ret = avformat_open_input(&pFormatCtx, PLAY_URL, nullptr, nullptr);	
 	if (ret != 0) {
-		TRACE("Couldn't open file (ret:%d)\n", ret);
+		TRACE("Couldn't open url=%s, (ret:%d)\n", PLAY_URL, ret);
 		return -1;
 	}
 	int totalSec = static_cast<int>(pFormatCtx->duration / AV_TIME_BASE);
