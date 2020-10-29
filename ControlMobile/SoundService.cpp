@@ -67,7 +67,7 @@ void SoundService::startPlay(void)
 
 DWORD CALLBACK SoundService::socketThread(LPVOID lp)
 {
-	TRACE("socketThread start. \n");
+	TRACE("SoundService socketThread start. \n");
 	SoundService *mPtr=(SoundService *)lp;
 	struct sockaddr_in sin;
 	struct sockaddr_in remoteAddr;	
@@ -112,13 +112,13 @@ DWORD CALLBACK SoundService::socketThread(LPVOID lp)
 			//}
 		}
 	}	
-	TRACE("socketThread exit. \n"); 
+	TRACE("SoundService socketThread exit. \n"); 
 	return 0;
 }
 
 DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 {	
-	TRACE("recvThread start. \n"); 
+	TRACE("SoundService recvThread start. \n"); 
 	SoundService *mPtr=(SoundService *)lp;
 	int recvLen = 0;
 	int i = 0;
@@ -319,13 +319,13 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 	waveOutReset(mPtr->hWaveOut);
     waveOutClose(mPtr->hWaveOut);
     mPtr->hWaveOut = NULL;	
-	TRACE("recvThread exit. \n"); 
+	TRACE("SoundService recvThread exit. \n"); 
 	return 0;
 }
 
 DWORD CALLBACK SoundService::recordThread(LPVOID lp)
 {
-	TRACE("recordThread start. \n"); 
+	TRACE("SoundService recordThread start. \n"); 
 	SoundService *mPtr=(SoundService *)lp;	
 	MMRESULT     result; 
 	
@@ -351,7 +351,7 @@ DWORD CALLBACK SoundService::recordThread(LPVOID lp)
 		waveInAddBuffer(mPtr->hWaveIn, &mPtr->WaveInHdr[i], sizeof(WAVEHDR) );		
 	}
 	waveInStart(mPtr->hWaveIn);
-	TRACE("recordThread exit. \n"); 
+	TRACE("SoundService recordThread exit. \n"); 
     return 0;
 }
 
@@ -391,6 +391,7 @@ DWORD SoundService::MicCallBack(HWAVEIN hWaveIn,UINT uMsg,DWORD lp,DWORD dw1,DWO
 
 void SoundService::stopPlay(void)
 {	
+	TRACE("SoundService stopPlay. \n"); 
 	if(is_stop == 0 ){
 		is_stop = 1;
 		closesocket(sock_cli);

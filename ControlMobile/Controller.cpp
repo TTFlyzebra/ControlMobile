@@ -361,7 +361,7 @@ void Controller::start()
 
 DWORD CALLBACK Controller::socketThread(LPVOID lp)
 {
-	TRACE("NetWorkService socketThread start. \n");
+	TRACE("Controller socketThread start. \n");
 	Controller *mPtr=(Controller *)lp;
 	struct sockaddr_in sin;
 	struct sockaddr_in remoteAddr;
@@ -390,22 +390,24 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 		mPtr->socket_cli = accept(mPtr->socket_lis, (SOCKADDR *)&remoteAddr, &nAddrlen);
 		TRACE("NetWorkService accept socke_cli=%d.\n",mPtr->socket_cli);
 		if(mPtr->socket_cli != INVALID_SOCKET){
-			mPtr->m_sendThread = CreateThread(NULL, 0, &Controller::sendThread, &(mPtr->socket_cli), CREATE_SUSPENDED, NULL);  
+			mPtr->m_sendThread = CreateThread(NULL, 0, &Controller::sendThread, lp, CREATE_SUSPENDED, NULL);  
 			if (NULL!= mPtr->m_sendThread) {  
 				ResumeThread(mPtr->m_sendThread);  
 			}	
 		}
 	}	
-	TRACE("socketThread exit. \n"); 
+	closesocket(mPtr->socket_cli);
+	closesocket(mPtr->socket_lis);
+	TRACE("Controller socketThread exit. \n"); 
 	return 0;
 }
 
 DWORD CALLBACK Controller::sendThread(LPVOID lp)
 {
-	SOCKET* pTmp = (SOCKET*)lp;
-    SOCKET  m_socket = (SOCKET)(*pTmp);
+	Controller *mPtr=(Controller *)lp;
+	SOCKET  m_socket = mPtr->socket_cli;
 	SDL_Event event;	
-	while (SDL_WaitEvent(&event)) {
+	while (!mPtr->isStop&&SDL_WaitEvent(&event)) {
 		switch (event.type) {
 		case EVENT_STOP:
 			TRACE("SDLWindow stop\n");
@@ -429,7 +431,7 @@ DWORD CALLBACK Controller::sendThread(LPVOID lp)
 			break;
 		case SDL_MOUSEBUTTONDOWN:
 		case SDL_MOUSEBUTTONUP:			
-			//input_manager_process_mouse_button(m_socket,&(event.button));	
+			input_manager_process_mouse_button(m_socket,&(event.button));	
 			break;
 		case SDL_FINGERMOTION:
 		case SDL_FINGERDOWN:
@@ -447,7 +449,7 @@ DWORD CALLBACK Controller::sendThread(LPVOID lp)
 void Controller::sendMouseMotionEvent(SDL_MouseMotionEvent *event)
 {
 	if(socket_cli!=INVALID_SOCKET){
-		input_manager_process_mouse_motion(socket_cli,event);	
+		//input_manager_process_mouse_motion(socket_cli,event);	
 	}
 }
 
@@ -461,7 +463,7 @@ void Controller::sendMouseWheelEvent(SDL_MouseWheelEvent *event)
 void Controller::sendMouseButtonEvent(SDL_MouseButtonEvent *event)
 {
 	if(socket_cli!=INVALID_SOCKET){
-		input_manager_process_mouse_button(socket_cli,event);	
+		//input_manager_process_mouse_button(socket_cli,event);	
 	}
 }
 
@@ -469,6 +471,7 @@ void Controller::sendMouseButtonEvent(SDL_MouseButtonEvent *event)
 void Controller::stop()
 {
 	isStop = true;
-	closesocket(socket_cli);
-	closesocket(socket_lis);
+	SDL_Event stop_event;
+	stop_event.type = EVENT_STOP;
+    SDL_PushEvent(&stop_event);
 }

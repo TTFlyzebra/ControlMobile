@@ -49,10 +49,10 @@ void SDLWindow::createWindow(CWnd *pCwnd){
 	TRACE( "info.name = %s\n", info.name);
 	TRACE( "SDL_GetRendererInfo %s\n", SDL_GetError());
 
-	pid_sdleventThread = CreateThread(NULL, 0, &SDLWindow::sdleventThread, this, CREATE_SUSPENDED, NULL);
-	if (NULL!= pid_sdleventThread) {  
-		ResumeThread(pid_sdleventThread);  
-	}
+	//pid_sdleventThread = CreateThread(NULL, 0, &SDLWindow::sdleventThread, this, CREATE_SUSPENDED, NULL);
+	//if (NULL!= pid_sdleventThread) {  
+	//	ResumeThread(pid_sdleventThread);  
+	//}
 	pid_playthread = CreateThread(NULL, 0, &SDLWindow::playThread, this, CREATE_SUSPENDED, NULL);
 	if (NULL!= pid_playthread) {  
 		ResumeThread(pid_playthread);  
@@ -178,9 +178,6 @@ void SDLWindow::pushYUV(u_char *yuv)
 void SDLWindow::destory()
 {
 	isStop = true;
-	SDL_Event stop_event;
-	stop_event.type = EVENT_STOP;
-    SDL_PushEvent(&stop_event);
 	EnterCriticalSection(&lock);
 	while(!yuvList.empty()){
 		u_char *yuv = yuvList.front();
