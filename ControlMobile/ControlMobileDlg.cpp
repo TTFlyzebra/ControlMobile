@@ -68,6 +68,7 @@ BEGIN_MESSAGE_MAP(CControlMobileDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_CHECK1, &CControlMobileDlg::OnBnClickedCheck1)
 	ON_BN_CLICKED(IDC_PLAYFILE, &CControlMobileDlg::OnBnClickedPlayfile)
 	ON_BN_CLICKED(IDC_STOPFILE, &CControlMobileDlg::OnBnClickedStopfile)
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -103,6 +104,8 @@ BOOL CControlMobileDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+    CWnd::SetWindowPos(NULL,0,0,520,680,SWP_NOZORDER|SWP_NOMOVE);
+	GetDlgItem(IDC_VIDEO)->SetWindowPos( NULL,1,1,361,641,SWP_NOZORDER | SWP_NOMOVE );
 
 	//初始化WSA
 	WORD sockVersion = MAKEWORD(2, 2);
@@ -165,6 +168,17 @@ void CControlMobileDlg::OnPaint()
 	}
 	else
 	{
+		//设置为绿色背景  
+		CRect   rect;    
+        CPaintDC   dc(this);    
+        GetClientRect(rect);    
+        dc.FillSolidRect(rect,RGB(255,255,255));  
+
+		CRect lRect;
+		GetDlgItem(IDC_VIDEO)->GetWindowRect(&lRect);
+		ScreenToClient(&lRect);
+		dc.FillSolidRect(lRect,RGB(0,0,0));  
+
 		CDialogEx::OnPaint();
 	}
 }
@@ -190,16 +204,10 @@ void CControlMobileDlg::OnBnClickedCancel()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	mController->stop();
-	delete mController;
 	mSoundService->stopSpeak();	
 	mSoundService->stopPlay();	
-	delete mSoundService;
 	mVideoService->stop();
-	delete mVideoService;
 	mSDLWindow->destory();
-	delete mSDLWindow;
-
-	WSACleanup();//释放资源的操作
 
 	CDialogEx::OnCancel();
 }
@@ -276,4 +284,17 @@ BOOL CControlMobileDlg::PreTranslateMessage(MSG* pMsg)
 	}		
 
 	return CDialogEx::PreTranslateMessage(pMsg);
+}
+
+
+void CControlMobileDlg::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+	Sleep(1000);
+	delete mController;
+	delete mSoundService;
+	delete mVideoService;
+	delete mSDLWindow;
+	WSACleanup();//释放资源的操作
+	// TODO: 在此处添加消息处理程序代码
 }

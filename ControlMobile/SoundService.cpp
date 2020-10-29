@@ -398,8 +398,7 @@ void SoundService::stopPlay(void)
 		closesocket(sock_lis);		
 		waveInStop(hWaveIn);
 		waveInReset(hWaveIn);
-		waveInClose(hWaveIn);
-		Sleep(1000);
+		waveInClose(hWaveIn);		
 	}
 }
 

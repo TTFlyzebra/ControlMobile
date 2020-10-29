@@ -51,6 +51,17 @@ DWORD CALLBACK VideoService::ffplayThread(LPVOID lp)
 DWORD VideoService::ffplay()
 {
 	TRACE("ffplay start\n");
+	u_char *sps;
+	u_char *pps;
+	AVFormatContext *pFormatCtx;
+	AVCodecContext *pCodecCtx_video;
+	AVCodecContext *pCodecCtx_audio;
+	AVPacket *packet;
+	AVFrame *frame;
+	AVFrame *fly_frame;
+	struct SwrContext* swr_cxt;
+	u_char *audio_buf;
+
 	av_register_all();
 	avformat_network_init();
 	pFormatCtx = avformat_alloc_context();		
@@ -109,35 +120,34 @@ DWORD VideoService::ffplay()
 			if (pCodec_audio != nullptr) {
 				pCodecCtx_audio = avcodec_alloc_context3(pCodec_audio);
 				ret = avcodec_parameters_to_context(pCodecCtx_audio, pCodecPar_audio);
+				if (ret >= 0) {
+					if (avcodec_open2(pCodecCtx_audio, pCodec_audio, nullptr) >= 0) {
+						TRACE("find audioStream = %d, sampleRateInHz = %d, channelConfig=%d, audioFormat=%d\n", i, pCodecCtx_audio->sample_rate, pCodecCtx_audio->channels,						pCodecCtx_audio->sample_fmt);
+						swr_cxt = swr_alloc();
+						swr_alloc_set_opts(
+							swr_cxt,
+							out_channelConfig,						
+							(AVSampleFormat) out_audioFormat,
+							out_sampleRateInHz,
+							pCodecCtx_audio->channel_layout,
+							pCodecCtx_audio->sample_fmt,
+							pCodecCtx_audio->sample_rate,
+							0,
+							nullptr);
+						swr_init(swr_cxt);
+						audio_buf = (uint8_t *) av_malloc(out_sampleRateInHz * 8);
+						//callBack->javaOnAudioInfo(out_sampleRateInHz, out_channelConfig, out_audioFormat);
+					} else {
+						avcodec_close(pCodecCtx_audio);
+						TRACE("init audio codec failed 2!\n");
+					}
+				} else {
+					TRACE("init audio codec failed 3!\n");
+				}
 			} else {
 				TRACE("init audio codec failed 1!\n");
 			}
-			if (ret >= 0) {
-				if (avcodec_open2(pCodecCtx_audio, pCodec_audio, nullptr) >= 0) {
-					TRACE("find audioStream = %d, sampleRateInHz = %d, channelConfig=%d, audioFormat=%d\n",
-						i, pCodecCtx_audio->sample_rate, pCodecCtx_audio->channels,
-						pCodecCtx_audio->sample_fmt);
-					swr_cxt = swr_alloc();
-					swr_alloc_set_opts(
-						swr_cxt,
-						out_channelConfig,
-						(AVSampleFormat) out_audioFormat,
-						out_sampleRateInHz,
-						pCodecCtx_audio->channel_layout,
-						pCodecCtx_audio->sample_fmt,
-						pCodecCtx_audio->sample_rate,
-						0,
-						nullptr);
-					swr_init(swr_cxt);
-					audio_buf = (uint8_t *) av_malloc(out_sampleRateInHz * 8);
-					//callBack->javaOnAudioInfo(out_sampleRateInHz, out_channelConfig, out_audioFormat);
-				} else {
-					avcodec_close(pCodecCtx_audio);
-					TRACE("init audio codec failed 2!\n");
-				}
-			} else {
-				TRACE("init audio codec failed 3!\n");
-			}
+
 			break;
 		}
 	}
@@ -178,16 +188,6 @@ DWORD VideoService::ffplay()
 			while (ret >= 0) {
 				ret = avcodec_receive_frame(pCodecCtx_video, frame);
 				if (ret >= 0) {
-					//TRACE("frame->width=%d,frame->height=%d\n",frame->width,frame->height);
-					//auto * video_buf = (u_char *) malloc((frame->width*frame->height* 3 / 2) * sizeof(u_char));
-					//int start = 0;
-					//memcpy(video_buf,frame->data[0],frame->width*frame->height);
-					//start=start+frame->width*frame->height;
-					//memcpy(video_buf + start,frame->data[1],frame->width*frame->height/4);
-					//start=start+frame->width*frame->height/4;
-					//memcpy(video_buf + start,frame->data[2],frame->width*frame->height/4);
-					//mSDLWindow->upVideoYUV(video_buf,frame->width,frame->height);					
-					//free(video_buf);
 					sws_scale(sws_ctx,                                  // sws context
 						(const uint8_t *const *)frame->data,  // src slice
 						frame->linesize,                      // src stride
@@ -206,7 +206,6 @@ DWORD VideoService::ffplay()
 					start=start+fly_frame->width*fly_frame->height/4;
 					memcpy(video_buf + start,fly_frame->data[2],fly_frame->width*fly_frame->height/4);
 					mSDLWindow->pushYUV(video_buf);					
-					//free(video_buf);
 				}
 			}
 		} else if (packet->stream_index == audioStream) {
@@ -227,18 +226,17 @@ DWORD VideoService::ffplay()
 			//			(AVSampleFormat) out_audioFormat,
 			//			0);
 			//		int size = out_buf_size * out_sampleRateInHz / frame->sample_rate;
-			//		//callBack->javaOnAudioDecode(audio_buf, size);
 			//	}
 			//}
 		}
 		av_packet_unref(packet);
 	}
 
-//	av_free(audio_buf);
+	//	av_free(audio_buf);
 	av_free(packet);
 	av_frame_free(&frame);
 	avcodec_close(pCodecCtx_video);
-//	avcodec_close(pCodecCtx_audio);
+	//	avcodec_close(pCodecCtx_audio);
 	avformat_close_input(&pFormatCtx);
 	TRACE("ffplay stop\n");
 	return 0;

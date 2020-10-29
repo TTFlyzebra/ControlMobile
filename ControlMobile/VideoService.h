@@ -20,17 +20,7 @@ public:
 	~VideoService(void);
 	void start(SDLWindow *mSDLWindow);
 	void stop();
-private:
-    u_char *sps;
-    u_char *pps;
-    AVFormatContext *pFormatCtx;
-    AVCodecContext *pCodecCtx_video;
-    AVCodecContext *pCodecCtx_audio;
-    AVPacket *packet;
-    AVFrame *frame;
-	AVFrame *fly_frame;
-    struct SwrContext* swr_cxt;
-    u_char *audio_buf;
+private:    
     bool isRun;
     bool isStop;
 

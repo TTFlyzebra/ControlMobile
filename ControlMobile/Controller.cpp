@@ -238,8 +238,8 @@ static bool convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen
 	to->inject_touch_event.buttons = convert_mouse_buttons(SDL_BUTTON(from->button));
     to->inject_touch_event.pointer_id = (uint64_t)(-1);
     to->inject_touch_event.position.screen_size = screen->frame_size;
-	to->inject_touch_event.position.point.x = from->x*1080/362;
-	to->inject_touch_event.position.point.y = from->y*1920/641;
+	to->inject_touch_event.position.point.x = from->x*1080/360;
+	to->inject_touch_event.position.point.y = from->y*1920/640;
 	to->inject_touch_event.pressure = from->type == SDL_MOUSEBUTTONDOWN ? 1.f : 0.f;
     return true;
 }
@@ -388,7 +388,7 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 	while (!mPtr->isStop)
 	{
 		mPtr->socket_cli = accept(mPtr->socket_lis, (SOCKADDR *)&remoteAddr, &nAddrlen);
-		TRACE("NetWorkService accept socke_cli=%d.\n",mPtr->socket_cli);
+		TRACE("Controller accept socke_cli=%d.\n",mPtr->socket_cli);
 		if(mPtr->socket_cli != INVALID_SOCKET){
 			mPtr->m_sendThread = CreateThread(NULL, 0, &Controller::sendThread, lp, CREATE_SUSPENDED, NULL);  
 			if (NULL!= mPtr->m_sendThread) {  

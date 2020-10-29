@@ -48,4 +48,5 @@ public:
 	afx_msg void OnBnClickedPlayfile();
 	afx_msg void OnBnClickedStopfile();
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	afx_msg void OnDestroy();
 };
