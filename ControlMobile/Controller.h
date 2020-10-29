@@ -69,7 +69,9 @@ public:
 	~Controller(void);
 	void start();
 	void stop();
-	void sendMouseEvent(SDL_MouseButtonEvent *button);
+	void sendMouseMotionEvent(SDL_MouseMotionEvent *event);
+	void sendMouseWheelEvent(SDL_MouseWheelEvent *event);
+	void sendMouseButtonEvent(SDL_MouseButtonEvent *event);
 private:
 
 	SOCKET socket_lis;

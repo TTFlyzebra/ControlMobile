@@ -86,10 +86,8 @@ size_t control_msg_serialize(struct control_msg *msg, unsigned char *buf) {
 			break;
         case CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
             write_position(&buf[1], &msg->inject_scroll_event.position);
-            buffer_write32be(&buf[13],
-                             (uint32_t) msg->inject_scroll_event.hscroll);
-            buffer_write32be(&buf[17],
-                             (uint32_t) msg->inject_scroll_event.vscroll);
+            buffer_write32be(&buf[13], (uint32_t) msg->inject_scroll_event.hscroll);
+            buffer_write32be(&buf[17], (uint32_t) msg->inject_scroll_event.vscroll);
             ret = 21;
 			break;
         case CONTROL_MSG_TYPE_SET_CLIPBOARD: {
@@ -203,6 +201,33 @@ struct point screen_convert_window_to_frame_coords(struct screen *screen, int32_
     }
     return result;
 }
+static bool convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen *screen, struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+    to->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
+    to->inject_touch_event.pointer_id = (uint64_t)(-1);
+    to->inject_touch_event.position.screen_size = screen->frame_size;
+    to->inject_touch_event.position.point.x = from->x*1080/362;
+	to->inject_touch_event.position.point.y = from->y*1920/641;
+    to->inject_touch_event.pressure = 1.f;
+    to->inject_touch_event.buttons = convert_mouse_buttons(from->state);
+    return true;
+}
+
+static bool convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct screen *screen,   struct control_msg *to) {
+    // mouse_x and mouse_y are expressed in pixels relative to the window
+    int mouse_x;
+    int mouse_y;
+    SDL_GetMouseState(&mouse_x, &mouse_y);
+    struct position position = {
+        screen->frame_size,
+        screen_convert_window_to_frame_coords(screen,mouse_x, mouse_y),
+    };
+    to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
+    to->inject_scroll_event.position = position;
+    to->inject_scroll_event.hscroll = from->x;
+    to->inject_scroll_event.vscroll = from->y;
+    return true;
+}
 
 static bool convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen *screen, struct control_msg *to) {
     to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
@@ -226,6 +251,34 @@ void sendMsg(SOCKET socket, struct control_msg msg){
 	int w = send(socket,(const char *)serialized_msg,length,0);
 }
 
+void input_manager_process_mouse_motion(SOCKET socket, const SDL_MouseMotionEvent *event) {
+    if (!event->state) {
+        // do not send motion events when no button is pressed
+        return;
+    }
+    if (event->which == SDL_TOUCH_MOUSEID) {
+        // simulated from touch events, so it's a duplicate
+        return;
+    }
+    struct control_msg msg;
+    if (!convert_mouse_motion(event, screen, &msg)) {
+         sendMsg(socket,msg);
+    }
+
+    //if (im->vfinger_down) {
+    //    struct point mouse = msg.inject_touch_event.position.point;
+    //    struct point vfinger = inverse_point(mouse, im->screen->frame_size);
+    //    simulate_virtual_finger(im, AMOTION_EVENT_ACTION_MOVE, vfinger);
+    //}
+}
+
+void input_manager_process_mouse_wheel(SOCKET socket, const SDL_MouseWheelEvent *event) {	
+	struct control_msg msg;
+    if (convert_mouse_wheel(event, screen, &msg)) {
+        sendMsg(socket,msg);
+    }
+}
+
 void input_manager_process_mouse_button(SOCKET socket,  const SDL_MouseButtonEvent *event) {	
     if (event->which == SDL_TOUCH_MOUSEID) {
         return;
@@ -245,7 +298,7 @@ void input_manager_process_mouse_button(SOCKET socket,  const SDL_MouseButtonEve
         }
 
         // double-click on black borders resize to fit the device screen
-        if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
+        //if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
             //int32_t x = event->x;
             //int32_t y = event->y;
             //screen_hidpi_scale_coords(screen, &x, &y);
@@ -256,7 +309,7 @@ void input_manager_process_mouse_button(SOCKET socket,  const SDL_MouseButtonEve
             //    screen_resize_to_fit(im->screen);
             //    return;
             //}
-        }
+        //}
         // otherwise, send the click event to the device
     }
 
@@ -336,12 +389,12 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 	{
 		mPtr->socket_cli = accept(mPtr->socket_lis, (SOCKADDR *)&remoteAddr, &nAddrlen);
 		TRACE("NetWorkService accept socke_cli=%d.\n",mPtr->socket_cli);
-		//if(mPtr->socket_cli != INVALID_SOCKET){
-		//	mPtr->m_sendThread = CreateThread(NULL, 0, &Controller::sendThread, &(mPtr->socket_cli), CREATE_SUSPENDED, NULL);  
-		//	if (NULL!= mPtr->m_sendThread) {  
-		//		ResumeThread(mPtr->m_sendThread);  
-		//	}	
-		//}
+		if(mPtr->socket_cli != INVALID_SOCKET){
+			mPtr->m_sendThread = CreateThread(NULL, 0, &Controller::sendThread, &(mPtr->socket_cli), CREATE_SUSPENDED, NULL);  
+			if (NULL!= mPtr->m_sendThread) {  
+				ResumeThread(mPtr->m_sendThread);  
+			}	
+		}
 	}	
 	TRACE("socketThread exit. \n"); 
 	return 0;
@@ -369,16 +422,14 @@ DWORD CALLBACK Controller::sendThread(LPVOID lp)
 		case SDL_KEYUP:
 			break;
 		case SDL_MOUSEMOTION:
+			input_manager_process_mouse_motion(m_socket,&(event.motion));
 			break;
 		case SDL_MOUSEWHEEL:
+			input_manager_process_mouse_wheel(m_socket, &(event.wheel));
 			break;
 		case SDL_MOUSEBUTTONDOWN:
-			input_manager_process_mouse_button(m_socket,&(event.button));
-			TRACE("SDL_MOUSEBUTTONDOWN\n");
-			break;
 		case SDL_MOUSEBUTTONUP:			
-			input_manager_process_mouse_button(m_socket,&(event.button));	
-			TRACE("SDL_MOUSEBUTTONUP\n");
+			//input_manager_process_mouse_button(m_socket,&(event.button));	
 			break;
 		case SDL_FINGERMOTION:
 		case SDL_FINGERDOWN:
@@ -393,10 +444,24 @@ DWORD CALLBACK Controller::sendThread(LPVOID lp)
 	return 0;
 }
 
-void Controller::sendMouseEvent(SDL_MouseButtonEvent *button)
+void Controller::sendMouseMotionEvent(SDL_MouseMotionEvent *event)
 {
 	if(socket_cli!=INVALID_SOCKET){
-		input_manager_process_mouse_button(socket_cli,button);	
+		input_manager_process_mouse_motion(socket_cli,event);	
+	}
+}
+
+void Controller::sendMouseWheelEvent(SDL_MouseWheelEvent *event)
+{
+	if(socket_cli!=INVALID_SOCKET){
+		//input_manager_process_mouse_wheel(socket_cli,event);	
+	}
+}
+
+void Controller::sendMouseButtonEvent(SDL_MouseButtonEvent *event)
+{
+	if(socket_cli!=INVALID_SOCKET){
+		input_manager_process_mouse_button(socket_cli,event);	
 	}
 }
 

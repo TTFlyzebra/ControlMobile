@@ -112,6 +112,8 @@ BOOL CControlMobileDlg::OnInitDialog()
 		TRACE("WSAStartup error !\n");
 	}
 
+	GetDlgItem(IDC_VIDEO)->SetFocus();
+
 	mController = new Controller();
 	mSoundService = new SoundService();
 	mVideoService = new VideoService();
@@ -232,35 +234,46 @@ void CControlMobileDlg::OnBnClickedStopfile()
 
 BOOL CControlMobileDlg::PreTranslateMessage(MSG* pMsg)
 {
-	if(GetDlgItem(IDC_VIDEO)->GetSafeHwnd() == pMsg->hwnd)
+	bool isInVideo = GetDlgItem(IDC_VIDEO)->GetSafeHwnd() == pMsg->hwnd;
+	SDL_MouseButtonEvent button;
+	CRect lRect;
+	GetDlgItem(IDC_VIDEO)->GetWindowRect(&lRect);
+	button.button=0;
+	switch (pMsg->message)
 	{
-		SDL_MouseButtonEvent button;
-		CRect lRect;
-		GetDlgItem(IDC_VIDEO)->GetWindowRect(&lRect);
-		button.button=0;
-		switch (pMsg->message)
-		{
-		case WM_LBUTTONDOWN:
-		case WM_LBUTTONUP:
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+		if(isInVideo){
 			button.type = pMsg->message==WM_LBUTTONDOWN?SDL_MOUSEBUTTONDOWN:SDL_MOUSEBUTTONUP;
-			button.button = 1;			
-			break;
-		case WM_MBUTTONDOWN:
-		case WM_MBUTTONUP:
+			button.button = 1;
+		}
+		break;
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+		if(isInVideo){
 			button.type = pMsg->message==WM_MBUTTONDOWN?SDL_MOUSEBUTTONDOWN:SDL_MOUSEBUTTONUP;
 			button.button = 2;
-			break;
-		case WM_RBUTTONDOWN:
-		case WM_RBUTTONUP:
+		}
+		break;
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+		if(isInVideo){
 			button.type = pMsg->message==WM_RBUTTONDOWN?SDL_MOUSEBUTTONDOWN:SDL_MOUSEBUTTONUP;
 			button.button = 3;
-			break;
 		}
-		if(button.button>0){
-			button.x=pMsg->pt.x-lRect.left;
-			button.y=pMsg->pt.y-lRect.top;
-			mController->sendMouseEvent(&button);
-		}		
+		break;
+	case WM_MOUSEHWHEEL:
+		SDL_MouseWheelEvent wEvent;
+		wEvent.x=pMsg->pt.x-lRect.left;
+		wEvent.y=pMsg->pt.y-lRect.top;
+		mController->sendMouseWheelEvent(&wEvent);
+		break;
 	}
+	if(button.button>0){
+		button.x=pMsg->pt.x-lRect.left;
+		button.y=pMsg->pt.y-lRect.top;
+		mController->sendMouseButtonEvent(&button);
+	}		
+
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
