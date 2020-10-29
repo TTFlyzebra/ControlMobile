@@ -19,13 +19,13 @@ class CAboutDlg : public CDialogEx
 public:
 	CAboutDlg();
 
-// 对话框数据
+	// 对话框数据
 	enum { IDD = IDD_ABOUTBOX };
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
-// 实现
+	// 实现
 protected:
 	DECLARE_MESSAGE_MAP()
 };
@@ -232,36 +232,35 @@ void CControlMobileDlg::OnBnClickedStopfile()
 
 BOOL CControlMobileDlg::PreTranslateMessage(MSG* pMsg)
 {
-	// TODO: 在此添加专用代码和/或调用基类
-
-	if(pMsg->message==WM_LBUTTONDOWN)
+	if(GetDlgItem(IDC_VIDEO)->GetSafeHwnd() == pMsg->hwnd)
 	{
-		TRACE("WM_LBUTTONDOWN\n");
+		SDL_MouseButtonEvent button;
+		CRect lRect;
+		GetDlgItem(IDC_VIDEO)->GetWindowRect(&lRect);
+		button.button=0;
+		switch (pMsg->message)
+		{
+		case WM_LBUTTONDOWN:
+		case WM_LBUTTONUP:
+			button.type = pMsg->message==WM_LBUTTONDOWN?SDL_MOUSEBUTTONDOWN:SDL_MOUSEBUTTONUP;
+			button.button = 1;			
+			break;
+		case WM_MBUTTONDOWN:
+		case WM_MBUTTONUP:
+			button.type = pMsg->message==WM_MBUTTONDOWN?SDL_MOUSEBUTTONDOWN:SDL_MOUSEBUTTONUP;
+			button.button = 2;
+			break;
+		case WM_RBUTTONDOWN:
+		case WM_RBUTTONUP:
+			button.type = pMsg->message==WM_RBUTTONDOWN?SDL_MOUSEBUTTONDOWN:SDL_MOUSEBUTTONUP;
+			button.button = 3;
+			break;
+		}
+		if(button.button>0){
+			button.x=pMsg->pt.x-lRect.left;
+			button.y=pMsg->pt.y-lRect.top;
+			mController->sendMouseEvent(&button);
+		}		
 	}
-
-	if(pMsg->message==WM_LBUTTONUP)
-	{
-		TRACE("WM_LBUTTONUP\n");
-	}
-	if(pMsg->message==WM_RBUTTONDOWN)
-	{
-		TRACE("WM_RBUTTONDOWN\n");
-	}
-
-	if(pMsg->message==WM_RBUTTONUP)
-	{
-		TRACE("WM_RBUTTONUP\n");
-	}
-	if(pMsg->message==WM_KEYUP)
-	{
-		TRACE("WM_KEYUP\n");
-	}
-
-	if(pMsg->message==WM_KEYDOWN)
-	{
-		TRACE("WM_KEYDOWN\n");
-	}
-
-
 	return CDialogEx::PreTranslateMessage(pMsg);
 }

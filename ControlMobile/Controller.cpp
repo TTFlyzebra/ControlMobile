@@ -210,13 +210,12 @@ static bool convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen
     if (!convert_mouse_action((SDL_EventType)from->type, &to->inject_touch_event.action)) {
         return false;
     }
+	to->inject_touch_event.buttons = convert_mouse_buttons(SDL_BUTTON(from->button));
     to->inject_touch_event.pointer_id = (uint64_t)(-1);
     to->inject_touch_event.position.screen_size = screen->frame_size;
-	to->inject_touch_event.position.point.x = from->x*1080/360;
-	to->inject_touch_event.position.point.y = from->y*1920/640;
+	to->inject_touch_event.position.point.x = from->x*1080/362;
+	to->inject_touch_event.position.point.y = from->y*1920/641;
 	to->inject_touch_event.pressure = from->type == SDL_MOUSEBUTTONDOWN ? 1.f : 0.f;
-    to->inject_touch_event.buttons = convert_mouse_buttons(SDL_BUTTON(from->button));
-
     return true;
 }
 
@@ -280,6 +279,8 @@ void input_manager_process_mouse_button(SOCKET socket,  const SDL_MouseButtonEve
 
 Controller::Controller(void)
 {
+	socket_lis = INVALID_SOCKET;
+	socket_cli = INVALID_SOCKET;
 	screen = &flyscreen;
 	screen->content_size.width = 360;
 	screen->content_size.height = 640;
@@ -311,8 +312,8 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 	Controller *mPtr=(Controller *)lp;
 	struct sockaddr_in sin;
 	struct sockaddr_in remoteAddr;
-	mPtr->sock_lis = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (mPtr->sock_lis == INVALID_SOCKET)
+	mPtr->socket_lis = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (mPtr->socket_lis == INVALID_SOCKET)
 	{
 		TRACE("socket error !");
 		return -1;
@@ -320,12 +321,12 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(9008);
 	sin.sin_addr.S_un.S_addr = INADDR_ANY;
-	if (bind(mPtr->sock_lis, (LPSOCKADDR)&sin, sizeof(sin)) == SOCKET_ERROR)
+	if (bind(mPtr->socket_lis, (LPSOCKADDR)&sin, sizeof(sin)) == SOCKET_ERROR)
 	{
 		TRACE("bind error !");
 		return -1;
 	}
-	if (listen(mPtr->sock_lis, 5) == SOCKET_ERROR)
+	if (listen(mPtr->socket_lis, 5) == SOCKET_ERROR)
 	{
 		TRACE("listen error !");
 		return -1;
@@ -333,14 +334,14 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 	int nAddrlen = sizeof(remoteAddr);
 	while (!mPtr->isStop)
 	{
-		SOCKET sock_cli = accept(mPtr->sock_lis, (SOCKADDR *)&remoteAddr, &nAddrlen);
-		TRACE("NetWorkService accept socke_cli=%d.\n",sock_cli);
-		if(sock_cli != INVALID_SOCKET){
-			mPtr->m_sendThread = CreateThread(NULL, 0, &Controller::sendThread, &sock_cli, CREATE_SUSPENDED, NULL);  
-			if (NULL!= mPtr->m_sendThread) {  
-				ResumeThread(mPtr->m_sendThread);  
-			}	
-		}
+		mPtr->socket_cli = accept(mPtr->socket_lis, (SOCKADDR *)&remoteAddr, &nAddrlen);
+		TRACE("NetWorkService accept socke_cli=%d.\n",mPtr->socket_cli);
+		//if(mPtr->socket_cli != INVALID_SOCKET){
+		//	mPtr->m_sendThread = CreateThread(NULL, 0, &Controller::sendThread, &(mPtr->socket_cli), CREATE_SUSPENDED, NULL);  
+		//	if (NULL!= mPtr->m_sendThread) {  
+		//		ResumeThread(mPtr->m_sendThread);  
+		//	}	
+		//}
 	}	
 	TRACE("socketThread exit. \n"); 
 	return 0;
@@ -364,10 +365,8 @@ DWORD CALLBACK Controller::sendThread(LPVOID lp)
 		case SDL_TEXTINPUT:
 			break;
 		case SDL_KEYDOWN:
-			TRACE("SDL_KEYDOWN\n");
 			break;
 		case SDL_KEYUP:
-			TRACE("SDL_KEYUP\n");
 			break;
 		case SDL_MOUSEMOTION:
 			break;
@@ -394,9 +393,17 @@ DWORD CALLBACK Controller::sendThread(LPVOID lp)
 	return 0;
 }
 
+void Controller::sendMouseEvent(SDL_MouseButtonEvent *button)
+{
+	if(socket_cli!=INVALID_SOCKET){
+		input_manager_process_mouse_button(socket_cli,button);	
+	}
+}
+
 
 void Controller::stop()
 {
 	isStop = true;
-	closesocket(sock_lis);
+	closesocket(socket_cli);
+	closesocket(socket_lis);
 }
