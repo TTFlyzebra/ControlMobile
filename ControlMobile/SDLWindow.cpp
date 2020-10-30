@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "SDLWindow.h"
 #include "resource.h"
-
+#include "screen.h"
 
 #define EVENT_STOP (SDL_USEREVENT + 1)
 #define EVENT_UPYUV (SDL_USEREVENT + 2)
@@ -32,6 +32,8 @@ void SDLWindow::createWindow(CWnd *pCwnd){
 	}	
 	//用mfc窗口句柄创建一个sdl window
 	pWindow = SDL_CreateWindowFrom((void *)(pCwnd->GetDlgItem(IDC_VIDEO)->GetSafeHwnd())); 
+	screen = &flyscreen;
+	screen->window = pWindow;
 	TRACE( "SDL_CreateWindowFrom %s\n", SDL_GetError()); 
 
 	//获取当前可用画图驱动 window中有3个，第一个为d3d，第二个为opengl，第三个为software

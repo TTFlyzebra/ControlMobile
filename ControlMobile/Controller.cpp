@@ -4,6 +4,7 @@
 
 static const int ACTION_DOWN = 1;
 static const int ACTION_UP = 1 << 1;
+static bool vfinger_down = false;
 
 bool IsSocketClosed(SOCKET clientSocket)  
 {  
@@ -32,16 +33,12 @@ size_t utf8_truncation_index(const char *utf8, size_t max_len) {
         return len;
     }
     len = max_len;
-    // see UTF-8 encoding <https://en.wikipedia.org/wiki/UTF-8#Description>
     while ((utf8[len] & 0x80) != 0 && (utf8[len] & 0xc0) != 0xc0) {
-        // the next byte is not the start of a new UTF-8 codepoint
-        // so if we would cut there, the character would be truncated
         len--;
     }
     return len;
 }
 
-// write length (2 bytes) + string (non nul-terminated)
 static size_t write_string(const char *utf8, size_t max_len, unsigned char *buf) {
     size_t len = utf8_truncation_index(utf8, max_len);
     buffer_write32be(buf, len);
@@ -105,7 +102,6 @@ size_t control_msg_serialize(struct control_msg *msg, unsigned char *buf) {
         case CONTROL_MSG_TYPE_COLLAPSE_NOTIFICATION_PANEL:
         case CONTROL_MSG_TYPE_GET_CLIPBOARD:
         case CONTROL_MSG_TYPE_ROTATE_DEVICE:
-            // no additional data
             ret = 1;
 			break;
         default:
@@ -115,8 +111,16 @@ size_t control_msg_serialize(struct control_msg *msg, unsigned char *buf) {
 	return ret;
 }
 
+void sendMsg(SOCKET socket, struct control_msg msg){
+	static unsigned char serialized_msg[CONTROL_MSG_MAX_SIZE];
+	int length = control_msg_serialize(&msg, serialized_msg);
+	if (!length) {
+		return;
+	}
+	int w = send(socket,(const char *)serialized_msg,length,0);
+}
+
 static void send_keycode(struct control_msg *msg, enum android_keycode keycode, int actions, const char *name) {
-    // send DOWN event
     msg->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
     msg->inject_keycode.keycode = keycode;
     msg->inject_keycode.metastate = AMETA_NONE;
@@ -161,24 +165,18 @@ enum android_motionevent_buttons convert_mouse_buttons(uint32_t state) {
     return buttons;
 }
 
-
 struct point screen_convert_window_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
     int ww, wh, dw, dh;
     SDL_GetWindowSize(screen->window, &ww, &wh);
     SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
-    // scale for HiDPI (64 bits for intermediate multiplications)
     x = (int64_t) x * dw / ww;
     y = (int64_t) y * dh / wh;
     unsigned rotation = screen->rotation;
     assert(rotation < 4);
-
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;
-
-
     x = (int64_t) (x - screen->rect.x) * w / screen->rect.w;
     y = (int64_t) (y - screen->rect.y) * h / screen->rect.h;
-
     struct point result;
     switch (rotation) {
         case 0:
@@ -201,20 +199,40 @@ struct point screen_convert_window_to_frame_coords(struct screen *screen, int32_
     }
     return result;
 }
+
+static struct point inverse_point(struct point point, struct size size) {
+    point.x = size.width - point.x;
+    point.y = size.height - point.y;
+    return point;
+}
+
+static bool simulate_virtual_finger(SOCKET socket, enum android_motionevent_action action,  struct point point) {
+    bool up = action == AMOTION_EVENT_ACTION_UP;
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+    msg.inject_touch_event.action = action;
+    msg.inject_touch_event.position.screen_size = screen->frame_size;
+    msg.inject_touch_event.position.point = point;
+    msg.inject_touch_event.pointer_id =(uint64_t)(-2);
+    msg.inject_touch_event.pressure = up ? 0.0f : 1.0f;
+    msg.inject_touch_event.buttons = AMOTION_EVENT_BUTTON_PRIMARY;
+    sendMsg(socket,msg);
+    return true;
+}
+
 static bool convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen *screen, struct control_msg *to) {
     to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
     to->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
     to->inject_touch_event.pointer_id = (uint64_t)(-1);
     to->inject_touch_event.position.screen_size = screen->frame_size;
-    to->inject_touch_event.position.point.x = from->x*1080/362;
-	to->inject_touch_event.position.point.y = from->y*1920/641;
+    to->inject_touch_event.position.point.x = from->x*1080/360;
+	to->inject_touch_event.position.point.y = from->y*1920/640;
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons = convert_mouse_buttons(from->state);
     return true;
 }
 
 static bool convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct screen *screen,   struct control_msg *to) {
-    // mouse_x and mouse_y are expressed in pixels relative to the window
     int mouse_x;
     int mouse_y;
     SDL_GetMouseState(&mouse_x, &mouse_y);
@@ -244,32 +262,22 @@ static bool convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen
     return true;
 }
 
-void sendMsg(SOCKET socket, struct control_msg msg){
-	static unsigned char serialized_msg[CONTROL_MSG_MAX_SIZE];
-	int length = control_msg_serialize(&msg, serialized_msg);
-	if (!length) return;
-	int w = send(socket,(const char *)serialized_msg,length,0);
-}
-
 void input_manager_process_mouse_motion(SOCKET socket, const SDL_MouseMotionEvent *event) {
     if (!event->state) {
-        // do not send motion events when no button is pressed
         return;
     }
     if (event->which == SDL_TOUCH_MOUSEID) {
-        // simulated from touch events, so it's a duplicate
         return;
     }
     struct control_msg msg;
-    if (!convert_mouse_motion(event, screen, &msg)) {
+    if (convert_mouse_motion(event, screen, &msg)) {
          sendMsg(socket,msg);
     }
-
-    //if (im->vfinger_down) {
-    //    struct point mouse = msg.inject_touch_event.position.point;
-    //    struct point vfinger = inverse_point(mouse, im->screen->frame_size);
-    //    simulate_virtual_finger(im, AMOTION_EVENT_ACTION_MOVE, vfinger);
-    //}
+    if (vfinger_down) {
+        struct point mouse = msg.inject_touch_event.position.point;
+        struct point vfinger = inverse_point(mouse, screen->frame_size);
+        simulate_virtual_finger(socket, AMOTION_EVENT_ACTION_MOVE, vfinger);
+    }
 }
 
 void input_manager_process_mouse_wheel(SOCKET socket, const SDL_MouseWheelEvent *event) {	
@@ -296,21 +304,6 @@ void input_manager_process_mouse_button(SOCKET socket,  const SDL_MouseButtonEve
 			sendMsg(socket,msg);
             return;
         }
-
-        // double-click on black borders resize to fit the device screen
-        //if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
-            //int32_t x = event->x;
-            //int32_t y = event->y;
-            //screen_hidpi_scale_coords(screen, &x, &y);
-            //SDL_Rect *r = &(screen->rect);
-            //bool outside = x < r->x || x >= r->x + r->w
-            //            || y < r->y || y >= r->y + r->h;
-            //if (outside) {
-            //    screen_resize_to_fit(im->screen);
-            //    return;
-            //}
-        //}
-        // otherwise, send the click event to the device
     }
 
     if (!convert_mouse_button(event, screen, &msg)) {
@@ -318,18 +311,87 @@ void input_manager_process_mouse_button(SOCKET socket,  const SDL_MouseButtonEve
     }
 
 	sendMsg(socket,msg);
-  
-    // Pinch-to-zoom simulation.
-    //
-    // If Ctrl is hold when the left-click button is pressed, then
-    // pinch-to-zoom mode is enabled: on every mouse event until the left-click
-    // button is released, an additional "virtual finger" event is generated,
-    // having a position inverted through the center of the screen.
-    //
-    // In other words, the center of the rotation/scaling is the center of the
-    // screen.
+
+	#define CTRL_PRESSED (SDL_GetModState() & (KMOD_LCTRL | KMOD_RCTRL))
+    if ((down && !vfinger_down && CTRL_PRESSED) || (!down && vfinger_down)) {
+        struct point mouse = msg.inject_touch_event.position.point;
+		struct point vfinger = inverse_point(mouse, screen->frame_size);
+        enum android_motionevent_action action = down? AMOTION_EVENT_ACTION_DOWN : AMOTION_EVENT_ACTION_UP;
+        if (!simulate_virtual_finger(socket, action, vfinger)) {
+            return;
+        }
+        vfinger_down = down;
+    }
+ }
+
+bool convert_touch_action(SDL_EventType from, enum android_motionevent_action *to) {
+    switch (from) {
+        MAP(SDL_FINGERMOTION, AMOTION_EVENT_ACTION_MOVE);
+        MAP(SDL_FINGERDOWN,   AMOTION_EVENT_ACTION_DOWN);
+        MAP(SDL_FINGERUP,     AMOTION_EVENT_ACTION_UP);
+        FAIL;
+    }
 }
 
+struct point screen_convert_drawable_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
+    unsigned rotation = screen->rotation;
+    assert(rotation < 4);
+    int32_t w = screen->content_size.width;
+    int32_t h = screen->content_size.height;
+    x = (int64_t) (x - screen->rect.x) * w / screen->rect.w;
+    y = (int64_t) (y - screen->rect.y) * h / screen->rect.h;
+    struct point result;
+    switch (rotation) {
+        case 0:
+            result.x = x;
+            result.y = y;
+            break;
+        case 1:
+            result.x = h - y;
+            result.y = x;
+            break;
+        case 2:
+            result.x = w - x;
+            result.y = h - y;
+            break;
+        default:
+            assert(rotation == 3);
+            result.x = y;
+            result.y = w - x;
+            break;
+    }
+    return result;
+}
+
+static bool convert_touch(const SDL_TouchFingerEvent *from, struct screen *screen, struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+    if (!convert_touch_action((SDL_EventType)from->type, &to->inject_touch_event.action)) {
+        return false;
+    }
+    to->inject_touch_event.pointer_id = from->fingerId;
+    to->inject_touch_event.position.screen_size = screen->frame_size;
+
+    int dw;
+    int dh;
+    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
+
+    // SDL touch event coordinates are normalized in the range [0; 1]
+    int32_t x = from->x * dw;
+    int32_t y = from->y * dh;
+    to->inject_touch_event.position.point = screen_convert_drawable_to_frame_coords(screen, x, y);
+    to->inject_touch_event.pressure = from->pressure;
+    to->inject_touch_event.buttons = AMOTION_EVENT_BUTTON_PRIMARY;
+    return true;
+}
+
+void input_manager_process_touch(SOCKET socket, const SDL_TouchFingerEvent *event) {
+    struct control_msg msg;
+    if (convert_touch(event, screen, &msg)) {
+		sendMsg(socket, msg);
+    }
+}
+
+//Controller start
 Controller::Controller(void)
 {
 	socket_lis = INVALID_SOCKET;
@@ -430,12 +492,13 @@ DWORD CALLBACK Controller::sendThread(LPVOID lp)
 			input_manager_process_mouse_wheel(m_socket, &(event.wheel));
 			break;
 		case SDL_MOUSEBUTTONDOWN:
-		case SDL_MOUSEBUTTONUP:			
+		case SDL_MOUSEBUTTONUP:	
 			input_manager_process_mouse_button(m_socket,&(event.button));	
 			break;
 		case SDL_FINGERMOTION:
 		case SDL_FINGERDOWN:
 		case SDL_FINGERUP:
+			input_manager_process_touch(m_socket, &(event.tfinger));
 			break;
 		}
 		bool ret = IsSocketClosed(m_socket);

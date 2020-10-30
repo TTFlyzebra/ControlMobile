@@ -172,7 +172,7 @@ void CControlMobileDlg::OnPaint()
 		CRect   rect;    
         CPaintDC   dc(this);    
         GetClientRect(rect);    
-        dc.FillSolidRect(rect,RGB(255,255,255));  
+        dc.FillSolidRect(rect,RGB(240,240,240));  
 
 		CRect lRect;
 		GetDlgItem(IDC_VIDEO)->GetWindowRect(&lRect);
