@@ -121,11 +121,11 @@ BOOL CControlMobileDlg::OnInitDialog()
 	mSoundService = new SoundService();
 	mVideoService = new VideoService();
 	mSDLWindow = new SDLWindow();
-
-	mController->start();
+	
 	mVideoService->start(mSDLWindow);
 	mSoundService->startPlay();	
 	mSDLWindow->createWindow(this);
+	mController->start();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }

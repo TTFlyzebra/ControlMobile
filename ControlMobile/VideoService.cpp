@@ -4,7 +4,7 @@ extern "C" {
 #include "libavutil/imgutils.h"
 }
 
-#define PLAY_URL "rtmp://192.168.8.244/live/screen"
+#define PLAY_URL "rtmp://192.168.1.88/live/screen"
 //#define PLAY_URL "d:\\temp\\test.mp4"
 
 
