@@ -120,11 +120,11 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 {	
 	TRACE("SoundService recvThread start. \n"); 
 	SoundService *mPtr=(SoundService *)lp;
+	SOCKET socket = mPtr->sock_cli;
 	int recvLen = 0;
 	int i = 0;
 	MMRESULT     result; 
 	result = waveOutOpen(&mPtr->hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT); 
-
 	if (result) 
 	{ 
 	    TRACE("Failed to open waveform output device."); 
@@ -134,20 +134,15 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 	while (mPtr->is_stop == 0)	{
 		int ret = 0;
 		if(recvLen<6){
-			ret = recv(mPtr->sock_cli, mPtr->recv_buf+recvLen, 10240-recvLen, 0);
+			ret = recv(socket, mPtr->recv_buf+recvLen, 10240-recvLen, 0);
 			if(ret<=0){
-				closesocket(mPtr->sock_cli);
+				closesocket(socket);
 				TRACE("recvThread exit 1. \n"); 
 				return -1;
 			}else{
 				recvLen+=ret;
 			}
-		}
-
-        if(recvLen < 6 ) {
-			TRACE("recv error recvLen=%d, errno=%d. \n",recvLen, errno); 
-			continue;
-		}
+		}     
 		
 		long allLen = 0;
 		if(((byte)mPtr->recv_buf[0]==0x7e)&&((byte)mPtr->recv_buf[1]==0xa5)){
@@ -155,23 +150,21 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 			//TRACE("recv allLen=%d, len=%X%X. \n",allLen, mPtr->recv_buf[4]&0xFF,mPtr->recv_buf[5]&0xFF); 
 		}else{
 			TRACE("recv error recvLen=%d, head=%X,%X. \n",recvLen, mPtr->recv_buf[0]&0xFF,mPtr->recv_buf[1]&0xFF); 
-			continue;
+			TRACE("recvThread exit 1. \n");
+			return -1;
 		}
-		//TRACE("allLen=%d. sokcet=%d.\n",allLen,mPtr->sock_cli);
+		//TRACE("allLen=%d. sokcet=%d.\n",allLen,socket);
 		while (recvLen<(allLen+4)){
-			int ret = recv(mPtr->sock_cli, mPtr->recv_buf+recvLen, (allLen+4-recvLen), 0);
+			int ret = recv(socket, mPtr->recv_buf+recvLen, (allLen+4-recvLen), 0);
 			if(ret<=0){
-				closesocket(mPtr->sock_cli);
+				closesocket(socket);
 				TRACE("recvThread exit 2. \n"); 
 				return -1;
 			}else{
 				recvLen+=ret;
 			}
 		}
-		if(recvLen<(allLen+4)){
-			TRACE("recv data length error recvLen=%d, willRecvLen=%d \n",allLen+4,recvLen); 
-			continue;
-		}
+
 		if(((byte)mPtr->recv_buf[8]==0x04)&&((byte)mPtr->recv_buf[9]==0x4a)) {
 			int sample_rate = ((mPtr->recv_buf[14]<<8)&0xFF00)+(byte)mPtr->recv_buf[15];
 			TRACE("recv start play, sample_rate=%d\n",sample_rate);	
@@ -389,9 +382,6 @@ void SoundService::stopSpeak(void)
 		waveInClose(hWaveIn);
 	}
 }
-
-
-
 
 void SoundService::playFile(void)
 {

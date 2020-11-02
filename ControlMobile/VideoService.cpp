@@ -4,7 +4,7 @@ extern "C" {
 #include "libavutil/imgutils.h"
 }
 
-#define PLAY_URL "rtmp://192.168.1.88/live/screen"
+#define PLAY_URL "rtmp://192.168.8.244/live/screen"
 //#define PLAY_URL "d:\\temp\\test.mp4"
 
 
@@ -64,14 +64,18 @@ DWORD VideoService::ffplay()
 
 	av_register_all();
 	avformat_network_init();
-	pFormatCtx = avformat_alloc_context();		
-	int ret = avformat_open_input(&pFormatCtx, PLAY_URL, nullptr, nullptr);	
+	pFormatCtx = avformat_alloc_context();	
+	AVDictionary* avdic = NULL;
+	av_dict_set(&avdic, "probesize", "2048", 0);
+	av_dict_set(&avdic, "max_analyze_duration", "10", 0);
+	int ret = avformat_open_input(&pFormatCtx, PLAY_URL, nullptr, &avdic);	
 	if (ret != 0) {
 		TRACE("Couldn't open url=%s, (ret:%d)\n", PLAY_URL, ret);
 		return -1;
 	}
 	int totalSec = static_cast<int>(pFormatCtx->duration / AV_TIME_BASE);
 	TRACE("video time  %dmin:%dsec\n", totalSec / 60, totalSec % 60);
+
 
 	if (avformat_find_stream_info(pFormatCtx, nullptr) < 0) {
 		TRACE("Could't find stream infomation\n");

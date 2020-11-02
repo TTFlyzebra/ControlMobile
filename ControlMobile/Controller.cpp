@@ -457,8 +457,10 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 				ResumeThread(mPtr->m_sendThread);  
 			}	
 		}
-	}	
-	closesocket(mPtr->socket_cli);
+	}
+	if(mPtr->socket_cli != INVALID_SOCKET){
+		closesocket(mPtr->socket_cli);
+	}
 	closesocket(mPtr->socket_lis);
 	TRACE("Controller socketThread exit. \n"); 
 	return 0;
@@ -503,6 +505,7 @@ DWORD CALLBACK Controller::sendThread(LPVOID lp)
 		}
 		bool ret = IsSocketClosed(m_socket);
 		if(ret){
+			closesocket(m_socket);
 			break;
 		}		
 	}

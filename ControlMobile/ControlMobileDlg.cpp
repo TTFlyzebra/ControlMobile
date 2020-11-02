@@ -121,10 +121,9 @@ BOOL CControlMobileDlg::OnInitDialog()
 	mSoundService = new SoundService();
 	mVideoService = new VideoService();
 	mSDLWindow = new SDLWindow();
-	
+	mSDLWindow->createWindow(this);	
 	mVideoService->start(mSDLWindow);
-	mSoundService->startPlay();	
-	mSDLWindow->createWindow(this);
+	mSoundService->startPlay();		
 	mController->start();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -272,9 +271,16 @@ BOOL CControlMobileDlg::PreTranslateMessage(MSG* pMsg)
 		break;
 	case WM_MOUSEHWHEEL:
 		SDL_MouseWheelEvent wEvent;
+		TRACE("WM_MOUSEHWHEEL\n");
 		wEvent.x=pMsg->pt.x-lRect.left;
 		wEvent.y=pMsg->pt.y-lRect.top;
 		mController->sendMouseWheelEvent(&wEvent);
+		break; 
+	case WM_MOUSEMOVE:
+		SDL_MouseMotionEvent mMotionEvent;
+		mMotionEvent.x=pMsg->pt.x-lRect.left;
+		mMotionEvent.y=pMsg->pt.y-lRect.top;
+		mController->sendMouseMotionEvent(&mMotionEvent);
 		break;
 	}
 	if(button.button>0){
