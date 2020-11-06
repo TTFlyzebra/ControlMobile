@@ -75,7 +75,7 @@ DWORD CALLBACK SoundService::socketThread(LPVOID lp)
 	mPtr->sock_lis = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (mPtr->sock_lis == INVALID_SOCKET)
 	{
-		TRACE("socket error !");
+		TRACE("SoundService socket error !");
 		return -1;
 	} 		
 	sin.sin_family = AF_INET;
@@ -83,20 +83,20 @@ DWORD CALLBACK SoundService::socketThread(LPVOID lp)
 	sin.sin_addr.S_un.S_addr = INADDR_ANY;
 	if (bind(mPtr->sock_lis, (LPSOCKADDR)&sin, sizeof(sin)) == SOCKET_ERROR)
 	{
-		TRACE("bind error !");
+		TRACE("SoundService bind error !");
 		return -1;
 	}
 	if (listen(mPtr->sock_lis, 5) == SOCKET_ERROR)
 	{
-		TRACE("listen error !");
+		TRACE("SoundService listen error !");
 		return -1;
 	}	
 	int nAddrlen = sizeof(remoteAddr);
 	while (mPtr->is_stop == 0)
 	{
-		TRACE("accept client connect, socke_cli=%d.\n",mPtr->sock_cli);
+		TRACE("SoundService accept client connect, socke_cli=%d.\n",mPtr->sock_cli);
 		mPtr->sock_cli = accept(mPtr->sock_lis, (SOCKADDR *)&remoteAddr, &nAddrlen);
-		TRACE("accept socke_cli=%d.\n",mPtr->sock_cli);
+		TRACE("SoundService accept socke_cli=%d.\n",mPtr->sock_cli);
 		if(mPtr->sock_cli != INVALID_SOCKET){
 			if(mPtr->m_recvThread != NULL){
 				mPtr->m_recvThread = CreateThread(NULL, 0, &SoundService::recvThread, lp, CREATE_SUSPENDED, NULL);  
@@ -127,7 +127,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 	result = waveOutOpen(&mPtr->hWaveOut, WAVE_MAPPER,&mPtr->pOutFormat,0L, 0L, WAVE_FORMAT_DIRECT); 
 	if (result) 
 	{ 
-	    TRACE("Failed to open waveform output device."); 
+	    TRACE("SoundService Failed to open waveform output device."); 
 		return -1;
 	}
 	if(mPtr->is_save_play) mPtr->savePlayFile = fopen(mPtr->savePlayPath,"wb");
@@ -137,7 +137,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 			ret = recv(socket, mPtr->recv_buf+recvLen, 10240-recvLen, 0);
 			if(ret<=0){
 				closesocket(socket);
-				TRACE("recvThread exit 1. \n"); 
+				TRACE("SoundService recvThread exit 1. \n"); 
 				return -1;
 			}else{
 				recvLen+=ret;
@@ -149,8 +149,8 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 			allLen = (((byte)mPtr->recv_buf[2]<<24)&0xFF000000)+(((byte)mPtr->recv_buf[3]<<16)&0x00FF0000)+(((byte)mPtr->recv_buf[4]<<8)&0x0000FF00)+((byte)mPtr->recv_buf[5]&0x000000FF);	
 			//TRACE("recv allLen=%d, len=%X%X. \n",allLen, mPtr->recv_buf[4]&0xFF,mPtr->recv_buf[5]&0xFF); 
 		}else{
-			TRACE("recv error recvLen=%d, head=%X,%X. \n",recvLen, mPtr->recv_buf[0]&0xFF,mPtr->recv_buf[1]&0xFF); 
-			TRACE("recvThread exit 1. \n");
+			TRACE("SoundService recv error recvLen=%d, head=%X,%X. \n",recvLen, mPtr->recv_buf[0]&0xFF,mPtr->recv_buf[1]&0xFF); 
+			TRACE("SoundService recvThread exit 2. \n");
 			return -1;
 		}
 		//TRACE("allLen=%d. sokcet=%d.\n",allLen,socket);
@@ -158,7 +158,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 			int ret = recv(socket, mPtr->recv_buf+recvLen, (allLen+4-recvLen), 0);
 			if(ret<=0){
 				closesocket(socket);
-				TRACE("recvThread exit 2. \n"); 
+				TRACE("SoundService recvThread exit 3. \n"); 
 				return -1;
 			}else{
 				recvLen+=ret;
@@ -167,7 +167,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 
 		if(((byte)mPtr->recv_buf[8]==0x04)&&((byte)mPtr->recv_buf[9]==0x4a)) {
 			int sample_rate = ((mPtr->recv_buf[14]<<8)&0xFF00)+(byte)mPtr->recv_buf[15];
-			TRACE("recv start play, sample_rate=%d\n",sample_rate);	
+			TRACE("SoundService recv start play, sample_rate=%d\n",sample_rate);	
 			if(mPtr->play_sample_rate!=sample_rate){
 				mPtr->pOutFormat.nSamplesPerSec = sample_rate; 
 				waveOutReset(mPtr->hWaveOut);
@@ -180,7 +180,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 				memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
 			}
 			recvLen-=len;
-			TRACE("recv play data, recvLen=%d\n",recvLen);
+			TRACE("SoundService recv play data, recvLen=%d\n",recvLen);
 			//TODO:
 		}else if(((byte)mPtr->recv_buf[0]==0x7e)&&((byte)mPtr->recv_buf[1]==0xa5)&&((byte)mPtr->recv_buf[8]==0x04)&&((byte)mPtr->recv_buf[9]==0x4b)) {
 			int dataLen = (((byte)mPtr->recv_buf[14]<<24)&0xFF000000)+(((byte)mPtr->recv_buf[15]<<16)&0xFF0000)+(((byte)mPtr->recv_buf[16]<<8)&0xFF00)+(byte)mPtr->recv_buf[17];
@@ -202,7 +202,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 			}
 			recvLen-=len;
 		}else if(((byte)mPtr->recv_buf[0]==0x7e)&&((byte)mPtr->recv_buf[1]==0xa5)&&((byte)mPtr->recv_buf[8]==0x04)&&((byte)mPtr->recv_buf[9]==0x4c)) {
-			TRACE("recv pause play.\n");	
+			TRACE("SoundService recv pause play.\n");	
 			int len = sizeof(PC_PAUSE_PLAY);
 			if(recvLen-len>0){
 				memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
@@ -210,7 +210,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 			recvLen-=len;
 			//TODO:
 		}else if(((byte)mPtr->recv_buf[0]==0x7e)&&((byte)mPtr->recv_buf[1]==0xa5)&&((byte)mPtr->recv_buf[8]==0x04)&&((byte)mPtr->recv_buf[9]==0x4d)) {
-			TRACE("recv stop play.\n");	
+			TRACE("SoundService recv stop play.\n");	
 			if(mPtr->play_sample_rate!=PCM_OUT_RATE){
 				mPtr->pOutFormat.nSamplesPerSec = PCM_OUT_RATE; 
 				waveOutReset(mPtr->hWaveOut);
@@ -225,7 +225,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 			recvLen-=len;
 			//TODO:
 		}else if(((byte)mPtr->recv_buf[0]==0x7e)&&((byte)mPtr->recv_buf[1]==0xa5)&&((byte)mPtr->recv_buf[8]==0x04)&&((byte)mPtr->recv_buf[9]==0x50)) {
-			TRACE("recv open speak.\n");	
+			TRACE("SoundService recv open speak.\n");	
 			int len = sizeof(PC_OPEN_SPEAK);
 			if(recvLen-len>0){
 				memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
@@ -234,7 +234,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 			mPtr->startSpeak();
 			//TODO:
 		}else if(((byte)mPtr->recv_buf[0]==0x7e)&&((byte)mPtr->recv_buf[1]==0xa5)&&((byte)mPtr->recv_buf[8]==0x04)&&((byte)mPtr->recv_buf[9]==0x52)) {
-			TRACE("recv close speak.\n");	
+			TRACE("SoundService recv close speak.\n");	
 			int len = sizeof(PC_CLOSE_SPEAK);
 			if(recvLen-len>0){
 				memmove(mPtr->recv_buf,mPtr->recv_buf+len,recvLen-len);
@@ -243,7 +243,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 			mPtr->stopSpeak();
 			//TODO:
 		}else{
-			TRACE("recv error set recvLen=0.\n");	
+			TRACE("SoundService recv error set recvLen=0.\n");	
 			recvLen = 0;
 		}
 	}	
@@ -252,7 +252,7 @@ DWORD CALLBACK SoundService::recvThread(LPVOID lp)
 		
 	for(int n = 0;i<OUT_BUF_MAX;i++){
 		while(waveOutUnprepareHeader(mPtr->hWaveOut,&mPtr->WaveOutHdr[i],sizeof(WAVEHDR)) == WAVERR_STILLPLAYING){
-			TRACE("waveOutUnprepareHeader WAVERR_STILLPLAYING. \n"); 
+			TRACE("SoundService waveOutUnprepareHeader WAVERR_STILLPLAYING. \n"); 
 			Sleep(500);
 		}
 	}
@@ -270,7 +270,7 @@ DWORD CALLBACK SoundService::recordThread(LPVOID lp)
 	MMRESULT     result; 
 	
 	int n=waveInGetNumDevs();
-	TRACE("waveInGetNumDevs %d. \n",n); 
+	TRACE("SoundService waveInGetNumDevs %d. \n",n); 
 	
 	result = waveInOpen(&mPtr->hWaveIn, WAVE_MAPPER, &mPtr->pInFormat,(DWORD)MicCallBack, (DWORD)lp, CALLBACK_FUNCTION);
 	if (result!= MMSYSERR_NOERROR) 
@@ -346,15 +346,15 @@ void SoundService::startSpeak(void)
 {	
 	if(is_save_record ) saveRecordFile = fopen(saveRecordPath,"wb+");
 	is_speak = 1;
-	TRACE("recordThread start. \n"); 
+	TRACE("SoundService recordThread start. \n"); 
 	MMRESULT     result; 
 	
 	int n=waveInGetNumDevs();
-	TRACE("waveInGetNumDevs %d. \n",n); 
+	TRACE("SoundService waveInGetNumDevs %d. \n",n); 
 	
 	result = waveInOpen(&hWaveIn, WAVE_MAPPER, &pInFormat,(DWORD)MicCallBack, (DWORD)this, CALLBACK_FUNCTION);
 	if (result!= MMSYSERR_NOERROR) { 
-	    TRACE("Failed to open waveform input device."); 
+	    TRACE("SoundService Failed to open waveform input device."); 
 	}else{
 		for(int i=0;i<IN_BUF_MAX;i++){
 			WaveInHdr[i].lpData = inBuf[i];
@@ -385,7 +385,7 @@ void SoundService::stopSpeak(void)
 
 void SoundService::playFile(void)
 {
-	TRACE("recordThread start. \n"); 		
+	TRACE("SoundService recordThread start. \n"); 		
 	FILE *file;		
 	char readBuf[IN_BUF_SIZE];		
 	SoundService *mPtr=this;		
@@ -403,5 +403,5 @@ void SoundService::playFile(void)
  		i++;		
 	}		
 	fclose(file);	
- 	TRACE("recordThread exit. \n"); 		
+ 	TRACE("SoundService recordThread exit. \n"); 		
 }

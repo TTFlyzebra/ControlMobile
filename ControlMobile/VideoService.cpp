@@ -11,7 +11,7 @@ extern "C" {
 VideoService::VideoService(void)
 {
 	isStop = true;
-	isRun = false;
+	isRunning = false;
 	TRACE("VideoService\n");	
 }
 
@@ -35,22 +35,32 @@ void VideoService::start(SDLWindow *mSDLWindow)
 
 DWORD CALLBACK VideoService::ffplayThread(LPVOID lp)
 {
-	TRACE("ffplayThread start \n");	
+	TRACE("VideoService ffplayThread start \n");	
 	VideoService *mPtr = (VideoService *)lp;	
-	mPtr->isRun = true;
-	while(mPtr->isStop==false)
+	isRunning = true;
+	while(isStop==false)
 	{
+	    TRACE("loop read next frame.\n");
 		mPtr->ffplay();
 		Sleep(40);		
 	}
-	mPtr->isRun = false;
-	TRACE("ffplayThread exit \n");	
+	isRunning = false;
+	TRACE("VideoService ffplayThread exit \n");	
 	return 0;
+}
+
+int VideoService:: interrupt_cb(void *ctx)
+{
+	if(isStop){
+		TRACE("VideoService interrupt_cb \n");	
+		return 1;
+	}
+    return 0;
 }
 
 DWORD VideoService::ffplay()
 {
-	TRACE("ffplay start\n");
+	TRACE("VideoService ffplay thread start\n");
 	u_char *sps;
 	u_char *pps;
 	AVFormatContext *pFormatCtx;
@@ -65,20 +75,22 @@ DWORD VideoService::ffplay()
 	av_register_all();
 	avformat_network_init();
 	pFormatCtx = avformat_alloc_context();	
+	pFormatCtx->interrupt_callback.callback = interrupt_cb;
+	pFormatCtx->interrupt_callback.opaque = pFormatCtx;
 	AVDictionary* avdic = NULL;
 	av_dict_set(&avdic, "probesize", "32", 0);
 	av_dict_set(&avdic, "max_analyze_duration", "100000", 0);
 	int ret = avformat_open_input(&pFormatCtx, PLAY_URL, nullptr, &avdic);	
 	av_dict_free(&avdic);
 	if (ret != 0) {
-		TRACE("Couldn't open url=%s, (ret:%d)\n", PLAY_URL, ret);
+		TRACE("VideoService Couldn't open url=%s, (ret:%d)\n", PLAY_URL, ret);
 		return -1;
 	}
 	int totalSec = static_cast<int>(pFormatCtx->duration / AV_TIME_BASE);
-	TRACE("video time  %dmin:%dsec\n", totalSec / 60, totalSec % 60);
+	TRACE("VideoService video time  %dmin:%dsec\n", totalSec / 60, totalSec % 60);
 
 	if (avformat_find_stream_info(pFormatCtx, nullptr) < 0) {
-		TRACE("Could't find stream infomation\n");
+		TRACE("VideoService Could't find stream infomation\n");
 		return -1;
 	}
 
@@ -92,27 +104,27 @@ DWORD VideoService::ffplay()
 	}
 
 	if (videoStream == -1) {
-		TRACE("no find vedio_stream\n");
+		TRACE("VideoService no find vedio_stream\n");
 		return -1;
 	}
 
 	int vfps = (int) ((double) (pFormatCtx->streams[videoStream]->avg_frame_rate.num) /(double) (pFormatCtx->streams[videoStream]->avg_frame_rate.den));
-	TRACE("fps = %d\n",vfps);
+	TRACE("VideoService fps = %d\n",vfps);
 
 	AVCodecParameters *pCodecPar_video = pFormatCtx->streams[videoStream]->codecpar;
 	AVCodec *pCodec_video = avcodec_find_decoder(pCodecPar_video->codec_id);
 	if (pCodec_video == nullptr) {
-		TRACE(" not found decodec.\n");
+		TRACE("VideoService not found decodec.\n");
 		return -1;
 	}
 	pCodecCtx_video = avcodec_alloc_context3(pCodec_video);
 	ret = avcodec_parameters_to_context(pCodecCtx_video, pCodecPar_video);
 	if (ret < 0) {
-		TRACE("avcodec_parameters_to_context() failed %d\n", ret);
+		TRACE("VideoService avcodec_parameters_to_context() failed %d\n", ret);
 		return -1;
 	}
 	if (avcodec_open2(pCodecCtx_video, pCodec_video, nullptr) < 0) {
-		TRACE("Could not open decodec.\n");
+		TRACE("VideoService Could not open decodec.\n");
 		return -1;
 	}
 
@@ -130,7 +142,7 @@ DWORD VideoService::ffplay()
 				ret = avcodec_parameters_to_context(pCodecCtx_audio, pCodecPar_audio);
 				if (ret >= 0) {
 					if (avcodec_open2(pCodecCtx_audio, pCodec_audio, nullptr) >= 0) {
-						TRACE("find audioStream = %d, sampleRateInHz = %d, channelConfig=%d, audioFormat=%d\n", i, pCodecCtx_audio->sample_rate, pCodecCtx_audio->channels,						pCodecCtx_audio->sample_fmt);
+						TRACE("VideoService find audioStream = %d, sampleRateInHz = %d, channelConfig=%d, audioFormat=%d\n", i, pCodecCtx_audio->sample_rate, pCodecCtx_audio->channels,						pCodecCtx_audio->sample_fmt);
 						swr_cxt = swr_alloc();
 						swr_alloc_set_opts(
 							swr_cxt,
@@ -147,13 +159,13 @@ DWORD VideoService::ffplay()
 						//callBack->javaOnAudioInfo(out_sampleRateInHz, out_channelConfig, out_audioFormat);
 					} else {
 						avcodec_close(pCodecCtx_audio);
-						TRACE("init audio codec failed 2!\n");
+						TRACE("VideoService init audio codec failed 2!\n");
 					}
 				} else {
-					TRACE("init audio codec failed 3!\n");
+					TRACE("VideoService init audio codec failed 3!\n");
 				}
 			} else {
-				TRACE("init audio codec failed 1!\n");
+				TRACE("VideoService init audio codec failed 1!\n");
 			}
 
 			break;
@@ -188,7 +200,12 @@ DWORD VideoService::ffplay()
 		NULL                   // param
 		);          
 
-	while (!isStop && av_read_frame(pFormatCtx, packet) >= 0) {
+	while (!isStop ) {	
+		ret = av_read_frame(pFormatCtx, packet);
+		if(ret<0){
+			TRACE("VideoService av_read_frame read error, ret=%d\n",ret);
+			break;		
+		}
 		if (packet->stream_index == videoStream) {
 			//软解视频
 			//TODO::时间同步
@@ -246,16 +263,17 @@ DWORD VideoService::ffplay()
 	avcodec_close(pCodecCtx_video);
 	//	avcodec_close(pCodecCtx_audio);
 	avformat_close_input(&pFormatCtx);	
-	TRACE("ffplay stop\n");
+	TRACE("VideoService ffplay thread exit\n");
 	return 0;
 }
 
 void VideoService::stop()
 {
 	isStop = true;
-	//while (isRun){
-	//	TRACE("Can't stop VideoService, because is Running...\n");
-	//	Sleep(40);
-	//}
+	Sleep(1);
+	while (isRunning){
+		TRACE("Can't stop VideoService, because is Running...\n");
+		Sleep(1000);
+	}
 }
 

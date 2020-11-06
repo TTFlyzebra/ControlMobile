@@ -314,7 +314,11 @@ void CControlMobileDlg::OnBnClickedReconnect()
 	mSoundService->stopSpeak();	
 	mSoundService->stopPlay();	
 	mVideoService->stop();
+	mSDLWindow->destory();
+	delete mSDLWindow;
 
+	mSDLWindow = new SDLWindow();
+	mSDLWindow->createWindow(this);	
 	mVideoService->start(mSDLWindow);
 	mSoundService->startPlay();		
 	mController->start();

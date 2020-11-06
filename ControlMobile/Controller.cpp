@@ -433,7 +433,7 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 	mPtr->socket_lis = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (mPtr->socket_lis == INVALID_SOCKET)
 	{
-		TRACE("socket error !");
+		TRACE("Controller socket error !");
 		return -1;
 	} 		
 	sin.sin_family = AF_INET;
@@ -441,12 +441,12 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 	sin.sin_addr.S_un.S_addr = INADDR_ANY;
 	if (bind(mPtr->socket_lis, (LPSOCKADDR)&sin, sizeof(sin)) == SOCKET_ERROR)
 	{
-		TRACE("bind error !");
+		TRACE("Controller bind error !");
 		return -1;
 	}
 	if (listen(mPtr->socket_lis, 5) == SOCKET_ERROR)
 	{
-		TRACE("listen error !");
+		TRACE("Controller listen error !");
 		return -1;
 	}	
 	int nAddrlen = sizeof(remoteAddr);
@@ -491,14 +491,14 @@ DWORD CALLBACK Controller::sendThread(LPVOID lp)
 			m_socket=INVALID_SOCKET;
 			closesocket(mPtr->socket_lis);
 			mPtr->socket_lis=INVALID_SOCKET;
-			TRACE("SDLWindow stop\n");
+			TRACE("Controller SDLWindow stop\n");
 			return 0;
 		case SDL_QUIT:
 			closesocket(m_socket);
 			m_socket=INVALID_SOCKET;
 			closesocket(mPtr->socket_lis);
 			mPtr->socket_lis=INVALID_SOCKET;
-			TRACE("SDL_WaitEvent SDL_QUIT\n");			
+			TRACE("Controller SDL_WaitEvent SDL_QUIT\n");			
 			return 0;
 		case SDL_WINDOWEVENT:
 			break;
@@ -562,7 +562,7 @@ void Controller::stop()
 	stop_event.type = EVENT_STOP;
     SDL_PushEvent(&stop_event);
 	while (isRunning){
-		TRACE("controller thread is running\n");
+		TRACE("Controller thread is running\n");
 		Sleep(1000);
 	}
 }

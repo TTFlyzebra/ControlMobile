@@ -13,16 +13,18 @@ struct videoBuffer
 	int size;
 };
 
+static bool isRunning;
+static bool isStop;
+
 class VideoService
 {
 public:
 	VideoService();
 	~VideoService(void);
+	static int VideoService::interrupt_cb(void *ctx);
 	void start(SDLWindow *mSDLWindow);
 	void stop();
 private:    
-    bool isRun;
-    bool isStop;
 
     uint16_t out_sampleRateInHz;
     uint16_t out_channelConfig;
