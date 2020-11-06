@@ -427,6 +427,9 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 	Controller *mPtr=(Controller *)lp;
 	struct sockaddr_in sin;
 	struct sockaddr_in remoteAddr;
+
+	mPtr->isRunning = true;
+
 	mPtr->socket_lis = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (mPtr->socket_lis == INVALID_SOCKET)
 	{
@@ -456,13 +459,23 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 			if (NULL!= mPtr->m_sendThread) {  
 				ResumeThread(mPtr->m_sendThread);  
 			}	
+		}else{
+			if(mPtr->socket_lis != INVALID_SOCKET){
+				closesocket(mPtr->socket_lis);
+			}
+			mPtr->isRunning = false;
+			TRACE("Controller socketThread exit 1. \n"); 
+			return 0;
 		}
 	}
 	if(mPtr->socket_cli != INVALID_SOCKET){
 		closesocket(mPtr->socket_cli);
 	}
-	closesocket(mPtr->socket_lis);
-	TRACE("Controller socketThread exit. \n"); 
+	if(mPtr->socket_lis != INVALID_SOCKET){
+		closesocket(mPtr->socket_lis);
+	}
+	mPtr->isRunning = false;
+	TRACE("Controller socketThread exit 2. \n"); 
 	return 0;
 }
 
@@ -474,10 +487,18 @@ DWORD CALLBACK Controller::sendThread(LPVOID lp)
 	while (!mPtr->isStop&&SDL_WaitEvent(&event)) {
 		switch (event.type) {
 		case EVENT_STOP:
+			closesocket(m_socket);
+			m_socket=INVALID_SOCKET;
+			closesocket(mPtr->socket_lis);
+			mPtr->socket_lis=INVALID_SOCKET;
 			TRACE("SDLWindow stop\n");
 			return 0;
 		case SDL_QUIT:
-			TRACE("SDL_WaitEvent SDL_QUIT\n");
+			closesocket(m_socket);
+			m_socket=INVALID_SOCKET;
+			closesocket(mPtr->socket_lis);
+			mPtr->socket_lis=INVALID_SOCKET;
+			TRACE("SDL_WaitEvent SDL_QUIT\n");			
 			return 0;
 		case SDL_WINDOWEVENT:
 			break;
@@ -536,8 +557,12 @@ void Controller::sendMouseButtonEvent(SDL_MouseButtonEvent *event)
 
 void Controller::stop()
 {
-	isStop = true;
+	isStop = true;	
 	SDL_Event stop_event;
 	stop_event.type = EVENT_STOP;
     SDL_PushEvent(&stop_event);
+	while (isRunning){
+		TRACE("controller thread is running\n");
+		Sleep(1000);
+	}
 }

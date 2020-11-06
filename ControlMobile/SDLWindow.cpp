@@ -13,6 +13,7 @@ SDLWindow::SDLWindow(void)
 	isStop = false;
 	pTexture = NULL;
 	pRender = NULL;
+	fps = 24;
 	InitializeCriticalSection(&lock);
 }
 
@@ -61,10 +62,11 @@ void SDLWindow::createWindow(CWnd *pCwnd){
 	}
 }
 
-void SDLWindow::init(int width, int height)
+void SDLWindow::init(int width, int height, int fps)
 {	
 	this->width = width;
 	this->height = height;	
+	this->fps = fps;
 	sdlRT.w = width;
 	sdlRT.h = height;
 	sdlRT.x = 0;
@@ -144,10 +146,10 @@ DWORD SDLWindow::playYUV()
 		yuvList.pop();
 		LeaveCriticalSection(&lock); 
 		DWORD curretTime = timeGetTime();
-		DWORD sleepTime = 1000/25 - (curretTime - lastTime);
+		DWORD sleepTime = 1000/(fps+1) - (curretTime - lastTime);
 		//TRACE("curretTime=%d,lastTime=%d,sleepTime=%d\n",curretTime,lastTime,sleepTime);
 		lastTime = curretTime;		
-		if(size<8 && sleepTime>0 && sleepTime<(1000/24)){
+		if(size<8 && sleepTime>0 && sleepTime<(1000/fps)){
 			//TRACE("sleep time=%d frame size = %d\n",sleepTime, size);
 			Sleep(sleepTime);
 		}else{

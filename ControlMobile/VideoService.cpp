@@ -66,9 +66,10 @@ DWORD VideoService::ffplay()
 	avformat_network_init();
 	pFormatCtx = avformat_alloc_context();	
 	AVDictionary* avdic = NULL;
-	av_dict_set(&avdic, "probesize", "2048", 0);
-	av_dict_set(&avdic, "max_analyze_duration", "10", 0);
+	av_dict_set(&avdic, "probesize", "32", 0);
+	av_dict_set(&avdic, "max_analyze_duration", "100000", 0);
 	int ret = avformat_open_input(&pFormatCtx, PLAY_URL, nullptr, &avdic);	
+	av_dict_free(&avdic);
 	if (ret != 0) {
 		TRACE("Couldn't open url=%s, (ret:%d)\n", PLAY_URL, ret);
 		return -1;
@@ -76,11 +77,11 @@ DWORD VideoService::ffplay()
 	int totalSec = static_cast<int>(pFormatCtx->duration / AV_TIME_BASE);
 	TRACE("video time  %dmin:%dsec\n", totalSec / 60, totalSec % 60);
 
-
 	if (avformat_find_stream_info(pFormatCtx, nullptr) < 0) {
 		TRACE("Could't find stream infomation\n");
 		return -1;
 	}
+
 	int videoStream = -1;
 	int audioStream = -1;
 	for (int i = 0; i < pFormatCtx->nb_streams; i++) {
@@ -94,6 +95,9 @@ DWORD VideoService::ffplay()
 		TRACE("no find vedio_stream\n");
 		return -1;
 	}
+
+	int vfps = (int) ((double) (pFormatCtx->streams[videoStream]->avg_frame_rate.num) /(double) (pFormatCtx->streams[videoStream]->avg_frame_rate.den));
+	TRACE("fps = %d\n",vfps);
 
 	AVCodecParameters *pCodecPar_video = pFormatCtx->streams[videoStream]->codecpar;
 	AVCodec *pCodec_video = avcodec_find_decoder(pCodecPar_video->codec_id);
@@ -112,7 +116,7 @@ DWORD VideoService::ffplay()
 		return -1;
 	}
 
-	mSDLWindow->init(pCodecCtx_video->width,pCodecCtx_video->height);	
+	mSDLWindow->init(pCodecCtx_video->width,pCodecCtx_video->height,vfps);	
 	pCodecCtx_video->flags |=CODEC_FLAG_LOW_DELAY;
 
 	//音频使用软解，初始化音频解码，音频不是必须存在
@@ -236,12 +240,12 @@ DWORD VideoService::ffplay()
 		av_packet_unref(packet);
 	}
 
-	//	av_free(audio_buf);
+	//	av_free(audio_buf);	
 	av_free(packet);
 	av_frame_free(&frame);
 	avcodec_close(pCodecCtx_video);
 	//	avcodec_close(pCodecCtx_audio);
-	avformat_close_input(&pFormatCtx);
+	avformat_close_input(&pFormatCtx);	
 	TRACE("ffplay stop\n");
 	return 0;
 }

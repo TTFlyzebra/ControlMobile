@@ -15,7 +15,7 @@ public:
 	SDLWindow(void);
 	~SDLWindow(void);
 	void createWindow(CWnd *pCwnd);
-	void init(int width, int height);	
+	void init(int width, int height,int fps);	
 	void pushYUV(u_char *yuv);
 	void destory();
 
@@ -31,6 +31,7 @@ private:
 	CWnd *pCwnd; 
 	int width; 
 	int height;
+	int fps;
 
 	HANDLE pid_sdleventThread;  
 	static DWORD CALLBACK sdleventThread(LPVOID);

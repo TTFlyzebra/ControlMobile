@@ -69,6 +69,7 @@ BEGIN_MESSAGE_MAP(CControlMobileDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_PLAYFILE, &CControlMobileDlg::OnBnClickedPlayfile)
 	ON_BN_CLICKED(IDC_STOPFILE, &CControlMobileDlg::OnBnClickedStopfile)
 	ON_WM_DESTROY()
+	ON_BN_CLICKED(IDC_RECONNECT, &CControlMobileDlg::OnBnClickedReconnect)
 END_MESSAGE_MAP()
 
 
@@ -303,4 +304,18 @@ void CControlMobileDlg::OnDestroy()
 	delete mSDLWindow;
 	WSACleanup();//释放资源的操作
 	// TODO: 在此处添加消息处理程序代码
+}
+
+
+void CControlMobileDlg::OnBnClickedReconnect()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	mController->stop();
+	mSoundService->stopSpeak();	
+	mSoundService->stopPlay();	
+	mVideoService->stop();
+
+	mVideoService->start(mSDLWindow);
+	mSoundService->startPlay();		
+	mController->start();
 }

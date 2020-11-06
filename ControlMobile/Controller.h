@@ -78,6 +78,7 @@ private:
 	SOCKET socket_cli;
 
 	bool isStop;
+	bool isRunning;
 	HANDLE m_socketThread;  
 	static DWORD CALLBACK socketThread(LPVOID); 
 
