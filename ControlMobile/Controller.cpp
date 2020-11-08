@@ -561,6 +561,12 @@ void Controller::stop()
 	SDL_Event stop_event;
 	stop_event.type = EVENT_STOP;
     SDL_PushEvent(&stop_event);
+	if(socket_cli != INVALID_SOCKET){
+		closesocket(socket_cli);
+	}
+	if(socket_lis != INVALID_SOCKET){
+		closesocket(socket_lis);
+	}
 	while (isRunning){
 		TRACE("Controller thread is running\n");
 		Sleep(1000);
