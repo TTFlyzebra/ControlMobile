@@ -225,8 +225,8 @@ static bool convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen
     to->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
     to->inject_touch_event.pointer_id = (uint64_t)(-1);
     to->inject_touch_event.position.screen_size = screen->frame_size;
-    to->inject_touch_event.position.point.x = from->x*1080/360;
-	to->inject_touch_event.position.point.y = from->y*1920/640;
+    to->inject_touch_event.position.point.x = from->x*1080/400;
+	to->inject_touch_event.position.point.y = from->y*1920/712;
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons = convert_mouse_buttons(from->state);
     return true;
@@ -256,8 +256,8 @@ static bool convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen
 	to->inject_touch_event.buttons = convert_mouse_buttons(SDL_BUTTON(from->button));
     to->inject_touch_event.pointer_id = (uint64_t)(-1);
     to->inject_touch_event.position.screen_size = screen->frame_size;
-	to->inject_touch_event.position.point.x = from->x*1080/360;
-	to->inject_touch_event.position.point.y = from->y*1920/640;
+	to->inject_touch_event.position.point.x = from->x*1080/400;
+	to->inject_touch_event.position.point.y = from->y*1920/712;
 	to->inject_touch_event.pressure = from->type == SDL_MOUSEBUTTONDOWN ? 1.f : 0.f;
     return true;
 }
@@ -397,15 +397,15 @@ Controller::Controller(void)
 	socket_lis = INVALID_SOCKET;
 	socket_cli = INVALID_SOCKET;
 	screen = &flyscreen;
-	screen->content_size.width = 360;
-	screen->content_size.height = 640;
+	screen->content_size.width = 400;
+	screen->content_size.height = 712;
 	screen->frame_size.width = 1080;
 	screen->frame_size.height = 1920;
 	screen->rotation = 0;
     screen->rect.x = 0;
 	screen->rect.y = 0;
-	screen->rect.w = 360;
-	screen->rect.h = 640;
+	screen->rect.w = 400;
+	screen->rect.h = 712;
 }
 
 Controller::~Controller(void)

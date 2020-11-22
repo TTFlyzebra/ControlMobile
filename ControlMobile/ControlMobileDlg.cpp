@@ -105,8 +105,8 @@ BOOL CControlMobileDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-    CWnd::SetWindowPos(NULL,0,0,520,680,SWP_NOZORDER|SWP_NOMOVE);
-	GetDlgItem(IDC_VIDEO)->SetWindowPos( NULL,1,1,360,640,SWP_NOZORDER | SWP_NOMOVE );
+    CWnd::SetWindowPos(NULL,0,0,559,751,SWP_NOZORDER|SWP_NOMOVE);
+	GetDlgItem(IDC_VIDEO)->SetWindowPos( NULL,1,1,400,712,SWP_NOZORDER | SWP_NOMOVE );
 
 	//初始化WSA
 	WORD sockVersion = MAKEWORD(2, 2);
@@ -177,7 +177,7 @@ void CControlMobileDlg::OnPaint()
 		CRect lRect;
 		GetDlgItem(IDC_VIDEO)->GetWindowRect(&lRect);
 		ScreenToClient(&lRect);
-		dc.FillSolidRect(lRect,RGB(128,255,255));  
+		dc.FillSolidRect(lRect,RGB(0,0,0));  
 
 		CDialogEx::OnPaint();
 	}

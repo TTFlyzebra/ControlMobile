@@ -151,7 +151,7 @@ DWORD SDLWindow::playYUV()
 		lastTime = curretTime;		
 		if(size<8 && sleepTime>0 && sleepTime<(1000/fps)){
 			//TRACE("sleep time=%d frame size = %d\n",sleepTime, size);
-			Sleep(sleepTime);
+			//Sleep(sleepTime);
 		}else{
 			//TRACE("Don't sleep, frame size = %d\n",size);
 		}

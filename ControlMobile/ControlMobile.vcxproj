@@ -43,8 +43,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\C++PRO\ControlMobile\SDL2-2.0.12\include;D:\C++PRO\ControlMobile\ffmpeg\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\C++PRO\ControlMobile\SDL2-2.0.12\lib;D:\C++PRO\ControlMobile\ffmpeg\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\VCPRO\ControlMobile\ffmpeg\include;D:\VCPRO\ControlMobile\SDL2-2.0.12\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\VCPRO\ControlMobile\SDL2-2.0.12\lib;D:\VCPRO\ControlMobile\ffmpeg\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
