@@ -9,7 +9,7 @@ extern "C" {
 
 struct videoBuffer
 {
-	char *yuvData[1280*720*3/2];
+	char *yuvData[1440*2960*3/2];
 	int size;
 };
 

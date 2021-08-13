@@ -20,14 +20,16 @@ bool IsSocketClosed(SOCKET clientSocket)
 	return ret;  
 } 
 
-static void write_position(uint8_t *buf, const struct position *position) {
+static void write_position(uint8_t *buf, const struct position *position)
+{
     buffer_write32be(&buf[0], position->point.x);
     buffer_write32be(&buf[4], position->point.y);
     buffer_write16be(&buf[8], position->screen_size.width);
     buffer_write16be(&buf[10], position->screen_size.height);
 }
 
-size_t utf8_truncation_index(const char *utf8, size_t max_len) {
+size_t utf8_truncation_index(const char *utf8, size_t max_len)
+{
     size_t len = strlen(utf8);
     if (len <= max_len) {
         return len;
@@ -410,6 +412,7 @@ Controller::Controller(void)
 
 Controller::~Controller(void)
 {
+
 }
 
 void Controller::start()
@@ -430,50 +433,56 @@ DWORD CALLBACK Controller::socketThread(LPVOID lp)
 
 	mPtr->isRunning = true;
 
-	mPtr->socket_lis = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (mPtr->socket_lis == INVALID_SOCKET)
+	mPtr->socket_cli = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (mPtr->socket_cli == INVALID_SOCKET)
 	{
-		TRACE("Controller socket error !");
+		TRACE("Controller socket error !\n");
+		mPtr->isRunning = false;
 		return -1;
 	} 		
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(9008);
-	sin.sin_addr.S_un.S_addr = INADDR_ANY;
-	if (bind(mPtr->socket_lis, (LPSOCKADDR)&sin, sizeof(sin)) == SOCKET_ERROR)
+	sin.sin_addr.S_un.S_addr = inet_addr("192.168.137.11");
+	if (connect(mPtr->socket_cli, (LPSOCKADDR)&sin, sizeof(sin)) == SOCKET_ERROR)
 	{
-		TRACE("Controller bind error !");
+		TRACE("Controller connect error !\n");
+		mPtr->isRunning = false;
 		return -1;
 	}
-	if (listen(mPtr->socket_lis, 5) == SOCKET_ERROR)
-	{
-		TRACE("Controller listen error !");
-		return -1;
+	mPtr->m_sendThread = CreateThread(NULL, 0, &Controller::sendThread, lp, CREATE_SUSPENDED, NULL);
+	if (NULL!= mPtr->m_sendThread) {  
+		ResumeThread(mPtr->m_sendThread);  
 	}	
-	int nAddrlen = sizeof(remoteAddr);
-	while (!mPtr->isStop)
-	{
-		mPtr->socket_cli = accept(mPtr->socket_lis, (SOCKADDR *)&remoteAddr, &nAddrlen);
-		TRACE("Controller accept socke_cli=%d.\n",mPtr->socket_cli);
-		if(mPtr->socket_cli != INVALID_SOCKET){
-			mPtr->m_sendThread = CreateThread(NULL, 0, &Controller::sendThread, lp, CREATE_SUSPENDED, NULL);  
-			if (NULL!= mPtr->m_sendThread) {  
-				ResumeThread(mPtr->m_sendThread);  
-			}	
-		}else{
-			if(mPtr->socket_lis != INVALID_SOCKET){
-				closesocket(mPtr->socket_lis);
-			}
-			mPtr->isRunning = false;
-			TRACE("Controller socketThread exit 1. \n"); 
-			return 0;
-		}
-	}
-	if(mPtr->socket_cli != INVALID_SOCKET){
-		closesocket(mPtr->socket_cli);
-	}
-	if(mPtr->socket_lis != INVALID_SOCKET){
-		closesocket(mPtr->socket_lis);
-	}
+	//if (listen(mPtr->socket_lis, 5) == SOCKET_ERROR)
+	//{
+	//	TRACE("Controller listen error !");
+	//	return -1;
+	//}	
+	//int nAddrlen = sizeof(remoteAddr);
+	//while (!mPtr->isStop)
+	//{
+	//	mPtr->socket_cli = accept(mPtr->socket_lis, (SOCKADDR *)&remoteAddr, &nAddrlen);
+	//	TRACE("Controller accept socke_cli=%d.\n",mPtr->socket_cli);
+	//	if(mPtr->socket_cli != INVALID_SOCKET){
+	//		mPtr->m_sendThread = CreateThread(NULL, 0, &Controller::sendThread, lp, CREATE_SUSPENDED, NULL);  
+	//		if (NULL!= mPtr->m_sendThread) {  
+	//			ResumeThread(mPtr->m_sendThread);  
+	//		}	
+	//	}else{
+	//		if(mPtr->socket_lis != INVALID_SOCKET){
+	//			closesocket(mPtr->socket_lis);
+	//		}
+	//		mPtr->isRunning = false;
+	//		TRACE("Controller socketThread exit 1. \n"); 
+	//		return 0;
+	//	}
+	//}
+	//if(mPtr->socket_cli != INVALID_SOCKET){
+	//	closesocket(mPtr->socket_cli);
+	//}
+	//if(mPtr->socket_lis != INVALID_SOCKET){
+	//	closesocket(mPtr->socket_lis);
+	//}
 	mPtr->isRunning = false;
 	TRACE("Controller socketThread exit 2. \n"); 
 	return 0;

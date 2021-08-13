@@ -4,7 +4,7 @@ extern "C" {
 #include "libavutil/imgutils.h"
 }
 
-#define PLAY_URL "rtmp://192.168.8.244/live/screen"
+#define PLAY_URL "rtsp://192.168.137.11/live"
 //#define PLAY_URL "d:\\temp\\test.mp4"
 
 
@@ -78,16 +78,16 @@ DWORD VideoService::ffplay()
 	pFormatCtx->interrupt_callback.callback = interrupt_cb;
 	pFormatCtx->interrupt_callback.opaque = pFormatCtx;
 	AVDictionary* avdic = NULL;
+	av_dict_set(&avdic, "rtsp_transport", "tcp", 0); 
 	av_dict_set(&avdic, "probesize", "32", 0);
-	av_dict_set(&avdic, "max_analyze_duration", "100000", 0);
+	av_dict_set(&avdic, "max_analyze_duration", "200000", 0);
 	int ret = avformat_open_input(&pFormatCtx, PLAY_URL, nullptr, &avdic);	
 	av_dict_free(&avdic);
 	if (ret != 0) {
 		TRACE("VideoService Couldn't open url=%s, (ret:%d)\n", PLAY_URL, ret);
 		return -1;
 	}
-	int totalSec = static_cast<int>(pFormatCtx->duration / AV_TIME_BASE);
-	TRACE("VideoService video time  %dmin:%dsec\n", totalSec / 60, totalSec % 60);
+
 
 	if (avformat_find_stream_info(pFormatCtx, nullptr) < 0) {
 		TRACE("VideoService Could't find stream infomation\n");
@@ -107,6 +107,9 @@ DWORD VideoService::ffplay()
 		TRACE("VideoService no find vedio_stream\n");
 		return -1;
 	}
+
+	int totalSec = static_cast<int>(pFormatCtx->duration / AV_TIME_BASE);
+	TRACE("VideoService video time  %dmin:%dsec\n", totalSec / 60, totalSec % 60);
 
 	int vfps = (int) ((double) (pFormatCtx->streams[videoStream]->avg_frame_rate.num) /(double) (pFormatCtx->streams[videoStream]->avg_frame_rate.den));
 	TRACE("VideoService fps = %d\n",vfps);
@@ -128,6 +131,8 @@ DWORD VideoService::ffplay()
 		return -1;
 	}
 
+	TRACE("VideoService width=%d, height=%d.\n", pCodecCtx_video->width, pCodecCtx_video->height);
+
 	mSDLWindow->init(pCodecCtx_video->width,pCodecCtx_video->height,vfps);	
 	pCodecCtx_video->flags |=CODEC_FLAG_LOW_DELAY;
 
@@ -142,7 +147,7 @@ DWORD VideoService::ffplay()
 				ret = avcodec_parameters_to_context(pCodecCtx_audio, pCodecPar_audio);
 				if (ret >= 0) {
 					if (avcodec_open2(pCodecCtx_audio, pCodec_audio, nullptr) >= 0) {
-						TRACE("VideoService find audioStream = %d, sampleRateInHz = %d, channelConfig=%d, audioFormat=%d\n", i, pCodecCtx_audio->sample_rate, pCodecCtx_audio->channels,						pCodecCtx_audio->sample_fmt);
+						TRACE("VideoService find audioStream = %d, sampleRateInHz = %d, channelConfig=%d, audioFormat=%d\n", i, pCodecCtx_audio->sample_rate, pCodecCtx_audio->channels,pCodecCtx_audio->sample_fmt);
 						swr_cxt = swr_alloc();
 						swr_alloc_set_opts(
 							swr_cxt,

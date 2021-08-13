@@ -64,9 +64,10 @@ void SDLWindow::createWindow(CWnd *pCwnd){
 
 void SDLWindow::init(int width, int height, int fps)
 {	
+	TRACE("SDLWindow init width=%d, height=%d, fps=%d!\n", width, height, fps);
 	this->width = width;
 	this->height = height;	
-	this->fps = fps;
+	this->fps = 24;
 	sdlRT.w = width;
 	sdlRT.h = height;
 	sdlRT.x = 0;
