@@ -76,11 +76,11 @@ DWORD VideoService::ffplay()
 	avformat_network_init();
 	pFormatCtx = avformat_alloc_context();	
 	pFormatCtx->interrupt_callback.callback = interrupt_cb;
-	pFormatCtx->interrupt_callback.opaque = pFormatCtx;
+	pFormatCtx->interrupt_callback.opaque = this;
 	AVDictionary* avdic = NULL;
 	av_dict_set(&avdic, "rtsp_transport", "tcp", 0); 
-	av_dict_set(&avdic, "probesize", "32", 0);
-	av_dict_set(&avdic, "max_analyze_duration", "200000", 0);
+	//av_dict_set(&avdic, "probesize", "32", 0);
+	//av_dict_set(&avdic, "max_analyze_duration", "200000", 0);
 	int ret = avformat_open_input(&pFormatCtx, PLAY_URL, nullptr, &avdic);	
 	av_dict_free(&avdic);
 	if (ret != 0) {
@@ -134,7 +134,7 @@ DWORD VideoService::ffplay()
 	TRACE("VideoService width=%d, height=%d.\n", pCodecCtx_video->width, pCodecCtx_video->height);
 
 	mSDLWindow->init(pCodecCtx_video->width,pCodecCtx_video->height,vfps);	
-	pCodecCtx_video->flags |=CODEC_FLAG_LOW_DELAY;
+	//pCodecCtx_video->flags |=CODEC_FLAG_LOW_DELAY;
 
 	//音频使用软解，初始化音频解码，音频不是必须存在
 	for (int i = 0; i < pFormatCtx->nb_streams; i++) {

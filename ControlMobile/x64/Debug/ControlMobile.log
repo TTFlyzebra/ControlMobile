@@ -1,0 +1,22 @@
+﻿  ControlMobile.cpp
+D:\VcPro\ControlMobile\ffmpeg\include\libavutil\rational.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  ControlMobileDlg.cpp
+D:\VcPro\ControlMobile\ffmpeg\include\libavutil\rational.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  Controller.cpp
+  SDLWindow.cpp
+  SoundService.cpp
+D:\VcPro\ControlMobile\ffmpeg\include\libavutil\rational.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+D:\VcPro\ControlMobile\ControlMobile\protocol.h(23,28): warning C4838: 从“int”转换到“char”需要收缩转换
+D:\VcPro\ControlMobile\ControlMobile\protocol.h(23,98): warning C4838: 从“int”转换到“char”需要收缩转换
+D:\VcPro\ControlMobile\ControlMobile\protocol.h(35,28): warning C4838: 从“int”转换到“char”需要收缩转换
+D:\VcPro\ControlMobile\ControlMobile\SoundService.cpp(275,86): warning C4311: “类型强制转换”: 从“DWORD (__cdecl *)(HWAVEIN,UINT,DWORD,DWORD,DWORD)”到“DWORD”的指针截断
+D:\VcPro\ControlMobile\ControlMobile\SoundService.cpp(275,97): warning C4311: “类型强制转换”: 从“LPVOID”到“DWORD”的指针截断
+D:\VcPro\ControlMobile\ControlMobile\SoundService.cpp(301,39): warning C4312: “类型强制转换”: 从“DWORD”转换到更大的“SoundService *”
+D:\VcPro\ControlMobile\ControlMobile\SoundService.cpp(302,36): warning C4312: “类型强制转换”: 从“DWORD”转换到更大的“PWAVEHDR”
+D:\VcPro\ControlMobile\ControlMobile\SoundService.cpp(355,74): warning C4311: “类型强制转换”: 从“DWORD (__cdecl *)(HWAVEIN,UINT,DWORD,DWORD,DWORD)”到“DWORD”的指针截断
+D:\VcPro\ControlMobile\ControlMobile\SoundService.cpp(355,87): warning C4311: “类型强制转换”: 从“SoundService *”到“DWORD”的指针截断
+  stdafx.cpp
+  VideoService.cpp
+D:\VcPro\ControlMobile\ffmpeg\include\libavutil\rational.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  正在生成代码...
+  ControlMobile.vcxproj -> D:\VCPRO\ControlMobile\x64\Debug\ControlMobile.exe
